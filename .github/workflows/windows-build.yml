@@ -30,8 +30,28 @@ jobs:
       - name: Install dependencies
         run: npm install --include=optional
 
-      - name: Validate project
-        run: npm run check
+      - name: Core syntax preflight
+        shell: pwsh
+        run: |
+          $files = @(
+            'preflight.mjs',
+            'build-preflight.mjs',
+            'scripts-build.mjs',
+            'update-updater/main.cjs',
+            'server/server.js',
+            'electron/main.cjs',
+            'electron/preload.cjs'
+          )
+          foreach ($file in $files) {
+            node --check $file
+            if ($LASTEXITCODE -ne 0) { throw "Sintaxe inválida: $file" }
+          }
+
+      - name: Project preflight
+        run: node preflight.mjs
+
+      - name: Build preflight
+        run: node build-preflight.mjs
 
       - name: Build installer
         run: npm run dist
