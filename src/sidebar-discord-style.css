@@ -1,0 +1,174 @@
+/* Discord-inspired ChronoCord navigation sidebar
+   Applied without replacing the functional sidebar renderer. */
+
+.cc-shell {
+  --cc-rail-width: 64px;
+  --cc-sidebar-width: 308px;
+}
+
+.cc-server-rail {
+  width: var(--cc-rail-width) !important;
+  min-width: var(--cc-rail-width) !important;
+  max-width: var(--cc-rail-width) !important;
+  padding: 10px 8px !important;
+  gap: 9px !important;
+  background: #202126 !important;
+  border-right: 1px solid #2b2c31 !important;
+  box-shadow: none !important;
+}
+
+.cc-server-rail > div[title] {
+  width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  border-radius: 13px !important;
+  margin: 0 auto !important;
+  transition: border-radius .18s ease, transform .18s ease, background .18s ease, box-shadow .18s ease !important;
+}
+
+.cc-server-rail > div[title]:hover {
+  transform: none !important;
+  border-radius: 11px !important;
+  filter: none !important;
+}
+
+.cc-server-rail > div[title][style*="border-radius: \"50%\""] {
+  border-radius: 13px !important;
+}
+
+.cc-server-rail > div[title]:first-child {
+  margin-bottom: 5px !important;
+}
+
+.cc-sidebar {
+  width: var(--cc-sidebar-width) !important;
+  min-width: var(--cc-sidebar-width) !important;
+  max-width: var(--cc-sidebar-width) !important;
+  background: #2b2c32 !important;
+  border-right: 1px solid #1e1f23 !important;
+  box-shadow: none !important;
+}
+
+.cc-sidebar-header {
+  height: 58px !important;
+  padding: 9px 10px !important;
+  background: #2f3036 !important;
+  border-bottom: 1px solid #202126 !important;
+}
+
+.cc-sidebar-header > div,
+.cc-sidebar-header button {
+  color: #f2f3f5 !important;
+}
+
+.cc-sidebar-scroll {
+  background: #2b2c32 !important;
+  padding: 8px 8px 78px !important;
+  scrollbar-width: thin;
+  scrollbar-color: #1f2024 transparent;
+}
+
+.cc-sidebar-scroll::-webkit-scrollbar { width: 8px; }
+.cc-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.cc-sidebar-scroll::-webkit-scrollbar-thumb { background: #1f2024; border-radius: 8px; }
+
+.cc-sidebar-scroll .hoverable {
+  min-height: 36px;
+  border-radius: 7px !important;
+  transition: background .14s ease, color .14s ease, transform .14s ease !important;
+}
+
+.cc-sidebar-scroll .hoverable:hover {
+  background: rgba(255,255,255,.07) !important;
+  transform: none !important;
+}
+
+.cc-sidebar-scroll .chan-row {
+  min-height: 34px !important;
+  padding: 4px 8px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  color: #b5bac1 !important;
+}
+
+.cc-sidebar-scroll .chan-row:hover {
+  border: 0 !important;
+  background: #35363d !important;
+}
+
+.cc-sidebar-scroll .chan-row[style*="background"] {
+  background: #404249 !important;
+  box-shadow: inset 3px 0 #8e5cf6 !important;
+  color: #ffffff !important;
+}
+
+/* Section/category labels */
+.cc-sidebar-scroll [style*="text-transform: uppercase"],
+.cc-sidebar-scroll [style*="letter-spacing"] {
+  color: #92969f !important;
+  font-size: 11px !important;
+  letter-spacing: .08em !important;
+  font-weight: 700 !important;
+}
+
+/* Channel icon column */
+.cc-sidebar-scroll svg { opacity: .85; }
+.cc-sidebar-scroll .chan-row:hover svg { opacity: 1; }
+
+/* Boost / channel-and-role banners */
+.cc-sidebar-scroll [style*="Impulso"],
+.cc-sidebar-scroll [style*="Canais & Cargos"] {
+  border-radius: 8px !important;
+}
+
+/* Bottom voice/user controls */
+.cc-voice-dock,
+.cc-userbar {
+  background: #23242a !important;
+  border-color: #191a1e !important;
+  box-shadow: 0 -1px 0 rgba(255,255,255,.025) !important;
+}
+
+.cc-userbar {
+  min-height: 58px !important;
+  padding: 7px 8px !important;
+}
+
+.cc-userbar .hoverable,
+.cc-userbar [style*="cursor"] {
+  border-radius: 7px !important;
+}
+
+.cc-userbar svg { color: #b5bac1; }
+.cc-userbar svg:hover { color: #f2f3f5; }
+
+/* Friends/DM control row */
+.cc-sidebar-header [style*="border-radius"] {
+  border-radius: 8px !important;
+}
+
+/* Text density to match the reference */
+.cc-sidebar { font-size: 13px !important; }
+.cc-sidebar-scroll { line-height: 1.25 !important; }
+
+/* Keep the navigation pleasant at smaller desktop widths. */
+@media (max-width: 1100px) {
+  .cc-sidebar {
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+  }
+}
+
+@media (max-width: 780px) {
+  .cc-server-rail {
+    width: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
+  }
+  .cc-sidebar {
+    width: 248px !important;
+    min-width: 248px !important;
+    max-width: 248px !important;
+  }
+}
