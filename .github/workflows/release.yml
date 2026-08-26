@@ -69,3 +69,5 @@ jobs:
             Release automática do ChronoCord.
 
             O instalador foi compilado e validado pelo pipeline antes da publicação.
+
+# Triggered by ChronoCord build hardening.
