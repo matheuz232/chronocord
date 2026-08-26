@@ -15,7 +15,6 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) { app.quit(); }
 app.on('second-instance', () => { if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.focus(); } });
 
-
 function assertAllowedServerUrl(rawUrl) {
   const target = new URL(String(rawUrl));
   const base = new URL(SERVER_URL);
@@ -139,7 +138,6 @@ function launchUpdateChecker() {
   } catch {}
 }
 
-
 async function getSocketIoClient() {
   if (!socketImportPromise) socketImportPromise = import('socket.io-client');
   const mod = await socketImportPromise;
@@ -209,12 +207,15 @@ ipcMain.handle('socket:disconnect', () => { try { socketClient?.disconnect(); } 
 
 async function create() {
   const localOrigin = await startLocalAppServer();
+  const iconPath = path.join(__dirname, '..', 'assets', 'chronocord.ico');
+  app.setAppUserModelId('com.chronocord.app');
   win = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1050,
     minHeight: 700,
     backgroundColor: '#0e0c18',
+    icon: iconPath,
     autoHideMenuBar: true,
     frame: false,
     titleBarStyle: 'hidden',
@@ -245,9 +246,6 @@ async function create() {
     if (!url.startsWith(localOrigin)) event.preventDefault();
   });
 
-  // The app runs from a local Electron origin. HTTP API calls are proxied
-  // through the main process above; Socket.IO still uses the renderer, so add
-  // narrowly-scoped CORS response headers for the official ChronoCord server.
   const serverFilter = { urls: [`${SERVER_URL}/*`] };
   session.defaultSession.webRequest.onHeadersReceived(serverFilter, (details, callback) => {
     const headers = { ...details.responseHeaders };
