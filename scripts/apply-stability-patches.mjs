@@ -4,12 +4,23 @@ import path from 'node:path';
 const root = process.cwd();
 const sourcePath = path.join(root, 'src', 'ChronoCord.jsx');
 const mainPath = path.join(root, 'electron', 'main.cjs');
+const mainEntryPath = path.join(root, 'src', 'main.jsx');
 
 function replaceOnce(file, from, to, label) {
   const source = fs.readFileSync(file, 'utf8');
   if (source.includes(to)) return { changed: false, label };
   if (!source.includes(from)) throw new Error(`Patch não encontrado: ${label}`);
   fs.writeFileSync(file, source.replace(from, to), 'utf8');
+  return { changed: true, label };
+}
+
+function replaceRegexOnce(file, regex, to, label) {
+  const source = fs.readFileSync(file, 'utf8');
+  if (regex.test(source) && source.includes(to)) return { changed: false, label };
+  regex.lastIndex = 0;
+  if (!regex.test(source)) throw new Error(`Patch regex não encontrado: ${label}`);
+  regex.lastIndex = 0;
+  fs.writeFileSync(file, source.replace(regex, to), 'utf8');
   return { changed: true, label };
 }
 
@@ -20,6 +31,9 @@ patches.push(replaceOnce(sourcePath, 'return `https://www.youtube.com/embed/${en
 
 if (!fs.readFileSync(sourcePath, 'utf8').includes('import ProfilePage from "./ProfilePage";')) {
   patches.push(replaceOnce(sourcePath, 'import React, { useState, useRef, useEffect, useMemo } from "react";\n', 'import React, { useState, useRef, useEffect, useMemo } from "react";\nimport ProfilePage from "./ProfilePage";\n', 'ProfilePage import'));
+}
+if (!fs.readFileSync(sourcePath, 'utf8').includes('import FriendsHome from "./FriendsHome";')) {
+  patches.push(replaceOnce(sourcePath, 'import ProfilePage from "./ProfilePage";\n', 'import ProfilePage from "./ProfilePage";\nimport FriendsHome from "./FriendsHome";\n', 'FriendsHome import'));
 }
 
 const watch2Anchor = 'function w2Advance(){const next=watch2Queue[0]||null;';
@@ -42,6 +56,15 @@ if (!fs.readFileSync(sourcePath, 'utf8').includes('const [profilePage, setProfil
     '  const [profileModal, setProfileModal] = useState(null); // { isMe: bool, name, color, status, role, imgSrc }\n',
     '  const [profileModal, setProfileModal] = useState(null); // { isMe: bool, name, color, status, role, imgSrc }\n  const [profilePage, setProfilePage] = useState(null);\n',
     'Profile page state'
+  ));
+}
+
+if (!fs.readFileSync(sourcePath, 'utf8').includes('const [dmSection, setDmSection]')) {
+  patches.push(replaceOnce(
+    sourcePath,
+    '  const [profilePage, setProfilePage] = useState(null);\n',
+    '  const [profilePage, setProfilePage] = useState(null);\n  const [dmSection, setDmSection] = useState("friends");\n',
+    'DM section state'
   ));
 }
 
@@ -72,6 +95,47 @@ if (!fs.readFileSync(sourcePath, 'utf8').includes('{profilePage && <ProfilePage'
   patches.push(replaceOnce(sourcePath, profilePageAnchor, profilePageBlock, 'Profile page overlay'));
 }
 
+// DM rail opens the friends dashboard.
+patches.push(replaceOnce(sourcePath, 'const active = e.isDM ? view === "dm" : view === "server" && activeEra === e.id;', 'const active = e.isDM ? view === "dm" : view === "server" && activeEra === e.id;', 'DM rail marker'));
+patches.push(replaceOnce(sourcePath, 'const iconText = e.isDM ? themeColor : contrastText(e.color);', 'const iconText = e.isDM ? themeColor : contrastText(e.color);', 'DM icon marker'));
+
+const dmRailFrom = '<div key={e.id} onClick={() => (e.isDM ? setView("dm") : selectEra(e.id))}';
+const dmRailTo = '<div key={e.id} onClick={() => { if (e.isDM) { setView("dm"); setDmSection("friends"); } else { selectEra(e.id); } }}';
+if (fs.readFileSync(sourcePath, 'utf8').includes(dmRailFrom)) {
+  patches.push(replaceOnce(sourcePath, dmRailFrom, dmRailTo, 'DM rail navigation'));
+}
+
+// Sidebar navigation and DM list matching the requested friends layout.
+const dmSidebarRegex = /\{view === "dm"\n\s*\? \(friends\.length \? friends\.map\(\(f\) => \{[\s\S]*?\n\s*\) : eraChannels\.map/;
+const dmSidebarReplacement = `{view === "dm"\n            ? (<>
+                <div className="cc-dm-nav">
+                  {[["friends", "Amigos", "users"], ["requests", "Solicitações de mensagens", "mail"], ["nitro", "Nitro", "diamond"], ["store", "Loja", "gift"], ["quests", "Missões", "sparkles"]].map(([key, label, icon]) => (
+                    <div key={key} onClick={() => setDmSection(key)} className={\`cc-dm-nav-item \${dmSection === key ? "is-active" : ""}\`}><Icon name={icon} size={16} />{label}</div>
+                  ))}
+                </div>
+                <div className="cc-dm-label-row"><span>Mensagens diretas</span><span onClick={() => { setAddFriendMsg(""); setAddFriendOpen(true); }} className="cc-dm-add" title="Adicionar amigo">＋</span></div>
+                <div className="cc-dm-friend-list">
+                  {friends.length ? friends.map((f) => {
+                    const isActive = f.id === activeFriend;
+                    return (
+                      <div key={f.id} onClick={() => { setActiveFriend(f.id); setDmSection("chat"); }} className={\`hoverable cc-dm-friend-row \${isActive && dmSection === "chat" ? "is-active" : ""}\`}>
+                        <Avatar initials={f.name.slice(0, 2).toUpperCase()} color={f.color} size={32} status={f.status} ringColor={T.bg2} imgSrc={f.imgSrc} onClick={(e) => { e.stopPropagation(); openProfile({ isMe: false, name: f.name, color: f.color, status: f.status, role: f.role, imgSrc: f.imgSrc }); }} />
+                        <div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 500 }}>{f.name}</div><div style={{ fontSize: 11, color: T.textFaint }}>{f.activity || f.role}</div></div>
+                      </div>
+                    );
+                  }) : <div style={{ padding: "24px 10px", textAlign: "center", color: T.textFaint, fontSize: 12, lineHeight: 1.5 }}><Icon name="users" size={24} color={T.textDim} /><div style={{ marginTop: 8, fontWeight: 650, color: T.textDim }}>Nenhuma conversa</div><div style={{ marginTop: 3 }}>Adicione um amigo para começar.</div></div>}
+                </div>
+              </>)
+            : eraChannels.map`;
+patches.push(replaceRegexOnce(sourcePath, dmSidebarRegex, dmSidebarReplacement, 'DM sidebar redesign'));
+
+// The friends dashboard sits above the existing chat so the chat flow remains intact.
+const mainAreaFrom = '<div style={{ flex: 1, display: "flex", flexDirection: "column", background: T.bg3, minWidth: 0, transition: "background 200ms ease" }}>';
+const mainAreaTo = '<div style={{ flex: 1, display: "flex", flexDirection: "column", background: T.bg3, minWidth: 0, transition: "background 200ms ease", position: "relative" }}>\n        {view === "dm" && dmSection !== "chat" && (\n          <div className="cc-dm-home-overlay" style={{ position: "absolute", inset: 0, zIndex: 15 }}>\n            <FriendsHome\n              friends={friends}\n              T={T}\n              themeColor={themeColor}\n              myName={myName}\n              section={dmSection}\n              onAddFriend={() => { setAddFriendMsg(""); setAddFriendOpen(true); }}\n              onOpenProfile={(f) => openProfile({ isMe: false, name: f.name, color: f.color, status: f.status, role: f.role, imgSrc: f.imgSrc })}\n              onOpenChat={(id) => { setActiveFriend(id); setDmSection("chat"); }}\n            />\n          </div>\n        )}';
+if (fs.readFileSync(sourcePath, 'utf8').includes(mainAreaFrom)) {
+  patches.push(replaceOnce(sourcePath, mainAreaFrom, mainAreaTo, 'Friends home overlay'));
+}
+
 const mainSource = fs.readFileSync(mainPath, 'utf8');
 let mainNext = mainSource;
 if (!mainNext.includes("clientVersion: app.getVersion()")) {
@@ -95,6 +159,11 @@ if (!mainNext.includes('setPermissionCheckHandler')) {
 if (mainNext !== mainSource) {
   fs.writeFileSync(mainPath, mainNext, 'utf8');
   patches.push({ changed: true, label: 'Electron media/voice hardening' });
+}
+
+const entry = fs.readFileSync(mainEntryPath, 'utf8');
+if (!entry.includes("import \"./friends-home.css\";")) {
+  patches.push(replaceOnce(mainEntryPath, "import './app.css';\n", "import './app.css';\nimport './friends-home.css';\n", 'Friends home stylesheet'));
 }
 
 console.log(`ChronoCord stability patches: ${patches.filter(x => x.changed).length} applied, ${patches.filter(x => !x.changed).length} already present.`);
