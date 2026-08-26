@@ -35,13 +35,14 @@ Em produção configure `JWT_SECRET` e `CLIENT_ORIGINS`.
 
 Veja `SECURITY-AND-TESTS.md` para as correções de segurança e limitações de validação.
 
-
 ## 0.3.0
 A versão 0.3.0 adiciona retries/timeout de rede, reconexão Socket.IO, health check redundante e CORS compatível com o desktop.
-
 
 ## 1.0.0
 Tema Original, Preto e Branco, com personalização persistente e sistema de animações fluídas.
 
 ## ChronoCord 1.0.0
 Temas Original, Preto e Branco, motion system fluido e base alinhada ao Platform Server 1.0.0.
+
+## Build 1.0.3
+Pipeline reforçado com preflight de sintaxe dos scripts de patch antes da validação e geração do instalador.
