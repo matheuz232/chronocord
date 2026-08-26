@@ -5,14 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/apply-animation-pack.mjs && node scripts/apply-profile-media-fix.mjs && node scripts/apply-profile-layout-fix.mjs && node scripts/apply-profile-showcase.mjs && node scripts/apply-login-redesign.mjs && node scripts/apply-stability-patches.mjs && node scripts/apply-settings-page.mjs && node scripts/apply-sticker-studio.mjs && node scripts/apply-installer-branding.mjs && node build-preflight.mjs",
+    "prebuild": "node scripts/apply-animation-pack.mjs && node scripts/apply-profile-media-fix.mjs && node scripts/apply-profile-layout-fix.mjs && node scripts/apply-profile-showcase.mjs && node scripts/apply-login-redesign.mjs && node scripts/apply-branding-login-v2.mjs && node scripts/apply-stability-patches.mjs && node scripts/apply-settings-page.mjs && node scripts/apply-sticker-studio.mjs && node scripts/apply-installer-branding.mjs && node build-preflight.mjs",
     "build": "vite build",
     "desktop": "npm run build && electron .",
     "dist": "npm run build && npm run build:updater && electron-builder",
     "android:sync": "npm run build && npx cap sync android",
     "check:server": "node --check server/server.js",
     "check:electron": "node --check electron/main.cjs && node --check electron/preload.cjs",
-    "check": "node preflight.mjs && node scripts/apply-animation-pack.mjs && node scripts/apply-profile-media-fix.mjs && node scripts/apply-profile-layout-fix.mjs && node scripts/apply-profile-showcase.mjs && node scripts/apply-login-redesign.mjs && node scripts/apply-stability-patches.mjs && node scripts/apply-settings-page.mjs && node scripts/apply-sticker-studio.mjs && node scripts/apply-installer-branding.mjs && node build-preflight.mjs && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check update-updater/main.cjs && node scripts/verify-release-config.mjs",
+    "check": "node preflight.mjs && node scripts/apply-animation-pack.mjs && node scripts/apply-profile-media-fix.mjs && node scripts/apply-profile-layout-fix.mjs && node scripts/apply-profile-showcase.mjs && node scripts/apply-login-redesign.mjs && node scripts/apply-branding-login-v2.mjs && node scripts/apply-stability-patches.mjs && node scripts/apply-settings-page.mjs && node scripts/apply-sticker-studio.mjs && node scripts/apply-installer-branding.mjs && node build-preflight.mjs && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check update-updater/main.cjs && node scripts/verify-release-config.mjs",
     "diagnose": "node diagnose-build.mjs",
     "build:updater": "node scripts-build.mjs"
   },
