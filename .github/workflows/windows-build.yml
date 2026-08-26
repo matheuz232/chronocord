@@ -1,0 +1,64 @@
+name: ChronoCord Windows Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+
+jobs:
+  windows-build:
+    name: Build Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --include=optional
+
+      - name: Validate project
+        run: npm run check
+
+      - name: Build installer
+        run: npm run dist
+
+      - name: Verify installer
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path release -Filter 'ChronoCord-Setup-*.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'ChronoCord installer was not generated.' }
+          if ($exe.Length -lt 1MB) { throw "Installer unexpectedly small: $($exe.Length) bytes" }
+          Write-Host "Installer: $($exe.Name)"
+          Write-Host "Size: $($exe.Length) bytes"
+
+      - name: Generate SHA-256
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path release -Filter 'ChronoCord-Setup-*.exe' | Select-Object -First 1
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($exe.Name)" | Out-File "$($exe.FullName).sha256" -Encoding ascii -NoNewline
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChronoCord-Windows-${{ github.sha }}
+          path: |
+            release/ChronoCord-Setup-*.exe
+            release/ChronoCord-Setup-*.exe.sha256
+          if-no-files-found: error
+          retention-days: 14
