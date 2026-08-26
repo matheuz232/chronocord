@@ -4,6 +4,7 @@ import ChronoCord from './ChronoCord.jsx';
 import './app.css';
 import './sidebar-discord-style.css';
 import './chrono-animations.css';
+import './login-redesign.css';
 
 class ChronoCordErrorBoundary extends React.Component {
   constructor(props) {
