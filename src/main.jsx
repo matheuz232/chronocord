@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import ChronoCord from './ChronoCord.jsx';
 import './app.css';
+import './sidebar-discord-style.css';
 
 class ChronoCordErrorBoundary extends React.Component {
   constructor(props) {
