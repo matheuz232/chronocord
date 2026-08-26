@@ -1,6 +1,6 @@
 {
   "name": "chronocord-desktop",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,8 +13,8 @@
     "check:server": "node --check server/server.js",
     "check:electron": "node --check electron/main.cjs && node --check electron/preload.cjs",
     "check": "node preflight.mjs && node build-preflight.mjs && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check update-updater/main.cjs",
-    "build:updater": "node scripts-build.mjs",
-    "diagnose": "node diagnose-build.mjs"
+    "diagnose": "node diagnose-build.mjs",
+    "build:updater": "node scripts-build.mjs"
   },
   "dependencies": {
     "@capacitor/android": "7.4.3",
