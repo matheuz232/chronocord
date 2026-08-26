@@ -10,7 +10,7 @@
     "desktop": "npm run build && electron .",
     "dist": "npm run build && npm run build:updater && electron-builder --publish never",
     "android:sync": "npm run build && npx cap sync android",
-    "check:server": "node server/server.js --check",
+    "check:server": "node --check server/server.js",
     "check:electron": "node --check electron/bootstrap.cjs && node --check electron/main.cjs && node --check electron/preload.cjs",
     "check": "node preflight.mjs && node build-preflight.mjs && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check update-updater/main.cjs",
     "build:updater": "node scripts-build.mjs",
