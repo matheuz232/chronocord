@@ -28,16 +28,22 @@ jobs:
       - name: Install dependencies
         run: npm install --include=optional
 
-      - name: Preflight patch scripts
+      - name: Core script syntax preflight
         shell: pwsh
         run: |
-          $files = Get-ChildItem -Path scripts -Filter '*.mjs' -File -Recurse
+          $files = @(
+            'preflight.mjs',
+            'build-preflight.mjs',
+            'scripts-build.mjs',
+            'update-updater/main.cjs',
+            'server/server.js',
+            'electron/main.cjs',
+            'electron/preload.cjs'
+          )
           foreach ($file in $files) {
-            node --check $file.FullName
-            if ($LASTEXITCODE -ne 0) { throw "Sintaxe inválida: $($file.FullName)" }
+            node --check $file
+            if ($LASTEXITCODE -ne 0) { throw "Sintaxe inválida: $file" }
           }
-          node --check update-updater/main.cjs
-          if ($LASTEXITCODE -ne 0) { throw 'Sintaxe inválida: update-updater/main.cjs' }
 
       - name: Validate source
         run: npm run check
@@ -46,6 +52,15 @@ jobs:
         run: npm run dist
         env:
           CI: true
+
+      - name: Verify installer output
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path release -Filter 'ChronoCord-Setup-*.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'ChronoCord installer was not generated.' }
+          if ($exe.Length -lt 1MB) { throw "Installer unexpectedly small: $($exe.Length) bytes" }
+          Write-Host "Installer: $($exe.FullName)"
+          Write-Host "Size: $($exe.Length) bytes"
 
       - name: Generate SHA-256
         shell: pwsh
