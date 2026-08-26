@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import ChronoCord from './ChronoCord.jsx';
+import { MediaControls } from './media-controls.jsx';
 import './app.css';
 
 class ChronoCordErrorBoundary extends React.Component {
@@ -32,6 +33,9 @@ class ChronoCordErrorBoundary extends React.Component {
 
 createRoot(document.getElementById('root')).render(
   <ChronoCordErrorBoundary>
-    <ChronoCord />
+    <>
+      <ChronoCord />
+      <MediaControls />
+    </>
   </ChronoCordErrorBoundary>
 );
