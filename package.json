@@ -8,7 +8,7 @@
     "prebuild": "node build-preflight.mjs",
     "build": "vite build",
     "desktop": "npm run build && electron .",
-    "dist": "npm run build && npm run build:updater && electron-builder",
+    "dist": "npm run build && npm run build:updater && electron-builder --publish never",
     "android:sync": "npm run build && npx cap sync android",
     "check:server": "node --check server/server.js",
     "check:electron": "node --check electron/bootstrap.cjs && node --check electron/main.cjs && node --check electron/preload.cjs",
@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@esbuild/win32-x64": "0.25.9",
+    "@vitejs/plugin-react": "4.3.4",
     "@vitejs/plugin-react": "4.3.4",
     "electron": "38.0.0",
     "electron-builder": "26.0.12",
