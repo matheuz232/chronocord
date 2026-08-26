@@ -3,6 +3,11 @@ import path from 'node:path';
 
 const root = process.cwd();
 const file = path.join(root, 'src', 'ProfilePage.jsx');
+
+if (!fs.existsSync(file)) {
+  throw new Error(`ProfilePage não encontrado: ${file}`);
+}
+
 const source = fs.readFileSync(file, 'utf8');
 
 function replaceOnce(from, to, label, current) {
@@ -11,37 +16,68 @@ function replaceOnce(from, to, label, current) {
   return { text: current.replace(from, to), changed: true, label };
 }
 
+function apply(from, to, label, current) {
+  const result = replaceOnce(from, to, label, current);
+  return result;
+}
+
 let next = source;
 const changes = [];
 
-({ text: next, changed: changes[changes.length] === undefined ? false : false } = { text: next });
+const applyPatch = (from, to, label) => {
+  const result = apply(from, to, label, next);
+  next = result.text;
+  if (result.changed) changes.push(result.label);
+};
 
-let r = replaceOnce('  bannerColor: "#090909",\n', '  bannerColor: "#090909",\n  bannerImage: "",\n  avatarSrc: "",\n', 'custom media defaults', next); next = r.text; if (r.changed) changes.push(r.label);
+applyPatch(
+  '  bannerColor: "#090909",\n',
+  '  bannerColor: "#090909",\n  bannerImage: "",\n  avatarSrc: "",\n',
+  'custom media defaults'
+);
 
-r = replaceOnce('  const img = profile?.imgSrc;\n', '  const img = custom.avatarSrc || profile?.imgSrc;\n', 'avatar preview source', next); next = r.text; if (r.changed) changes.push(r.label);
+applyPatch(
+  '  const img = profile?.imgSrc;\n',
+  '  const img = custom.avatarSrc || profile?.imgSrc;\n',
+  'avatar preview source'
+);
 
-const helper = `\nfunction readImageFile(file, onDone) {\n  if (!file || !String(file.type || "").startsWith("image/")) return;\n  const reader = new FileReader();\n  reader.onload = (event) => { if (typeof event.target?.result === "string") onDone(event.target.result); };\n  reader.readAsDataURL(file);\n}\n`;
-r = replaceOnce('function OptionCard({ selected, onClick, title, subtitle, T, children }) {', helper + '\nfunction OptionCard({ selected, onClick, title, subtitle, T, children }) {', 'image reader helper', next); next = r.text; if (r.changed) changes.push(r.label);
+const helper = `\nfunction readImageFile(file, onDone) {\n  if (!file || !String(file.type || "").startsWith("image/")) return;\n  const reader = new FileReader();\n  reader.onload = (event) => {\n    if (typeof event.target?.result === "string") onDone(event.target.result);\n  };\n  reader.readAsDataURL(file);\n}\n`;
+
+applyPatch(
+  'function OptionCard({ selected, onClick, title, subtitle, T, children }) {',
+  helper + '\nfunction OptionCard({ selected, onClick, title, subtitle, T, children }) {',
+  'image reader helper'
+);
 
 const avatarSectionOld = `                <section>\n                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Avatar e decorações</div>\n                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 }}>\n                    {decorations.map((item) => <OptionCard key={item.id} selected={custom.decoration === item.id} onClick={() => patchCustom("decoration", item.id)} title={item.label} T={T}><div style={{ width: 34, height: 34, borderRadius: "50%", border: `2px dashed ${item.id === "none" ? T.border : themeColor}`, display: "flex", alignItems: "center", justifyContent: "center", color: item.id === "none" ? T.textFaint : themeColor }}>{item.glyph}</div></OptionCard>)}\n                  </div>\n                </section>`;
 const avatarSectionNew = `                <section>\n                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Avatar e decorações</div>\n                  <div style={{ display: "flex", alignItems: "center", gap: 14, background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 10, padding: 12, marginBottom: 10 }}>\n                    <AvatarPreview profile={profile} custom={custom} T={T} themeColor={themeColor} size={64} />\n                    <div style={{ flex: 1, minWidth: 0 }}>\n                      <div style={{ fontWeight: 700, fontSize: 12.5 }}>Foto de perfil</div>\n                      <div style={{ color: T.textFaint, fontSize: 10.5, marginTop: 3 }}>JPG, PNG, WEBP ou GIF. A foto fica separada do banner.</div>\n                    </div>\n                    {isMe && <label style={{ display: "inline-flex", alignItems: "center", gap: 7, border: `1px solid ${T.border}`, background: T.bg3, color: T.textMain, borderRadius: 8, padding: "8px 11px", cursor: "pointer", fontWeight: 700, fontSize: 11.5 }}>\n                      <Icon name="edit" size={14} /> Alterar foto\n                      <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => readImageFile(e.target.files?.[0], (value) => patchCustom("avatarSrc", value))} />\n                    </label>}\n                    {isMe && custom.avatarSrc && <button onClick={() => patchCustom("avatarSrc", "")} style={{ border: 0, background: "transparent", color: T.textFaint, cursor: "pointer", fontSize: 11.5 }}>Remover</button>}\n                  </div>\n                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 }}>\n                    {decorations.map((item) => <OptionCard key={item.id} selected={custom.decoration === item.id} onClick={() => patchCustom("decoration", item.id)} title={item.label} T={T}><div style={{ width: 34, height: 34, borderRadius: "50%", border: `2px dashed ${item.id === "none" ? T.border : themeColor}`, display: "flex", alignItems: "center", justifyContent: "center", color: item.id === "none" ? T.textFaint : themeColor }}>{item.glyph}</div></OptionCard>)}\n                  </div>\n                </section>`;
-r = replaceOnce(avatarSectionOld, avatarSectionNew, 'separate profile photo button', next); next = r.text; if (r.changed) changes.push(r.label);
+applyPatch(avatarSectionOld, avatarSectionNew, 'separate profile photo button');
 
 const bannerSectionOld = `                <section>\n                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Cor da faixa</div>\n                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>\n                    <input type="color" value={custom.bannerColor} disabled={!isMe} onChange={(e) => patchCustom("bannerColor", e.target.value)} style={{ width: 54, height: 36, padding: 0, border: 0, background: "none", cursor: "pointer" }} />\n                    <input value={custom.bannerColor} disabled={!isMe} onChange={(e) => patchCustom("bannerColor", e.target.value)} style={{ flex: 1, border: `1px solid ${T.border}`, background: T.bg1, borderRadius: 8, color: T.textMain, padding: "9px 11px", fontFamily: "'JetBrains Mono', monospace", outline: "none" }} />\n                  </div>\n                </section>`;
 const bannerSectionNew = `                <section>\n                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Banner do perfil</div>\n                  <div style={{ background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 10, padding: 12, marginBottom: 10 }}>\n                    <div style={{ height: 74, borderRadius: 8, overflow: "hidden", background: `linear-gradient(135deg, ${custom.bannerColor}, ${T.bg3})`, backgroundImage: custom.bannerImage ? `url(${custom.bannerImage})` : undefined, backgroundSize: "cover", backgroundPosition: "center", border: `1px solid ${T.border}`, marginBottom: 10 }} />\n                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>\n                      {isMe && <label style={{ display: "inline-flex", alignItems: "center", gap: 7, border: `1px solid ${T.border}`, background: T.bg3, color: T.textMain, borderRadius: 8, padding: "8px 11px", cursor: "pointer", fontWeight: 700, fontSize: 11.5 }}>\n                        <Icon name="edit" size={14} /> Alterar banner\n                        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => readImageFile(e.target.files?.[0], (value) => patchCustom("bannerImage", value))} />\n                      </label>}\n                      {isMe && custom.bannerImage && <button onClick={() => patchCustom("bannerImage", "")} style={{ border: 0, background: "transparent", color: T.textFaint, cursor: "pointer", fontSize: 11.5 }}>Remover imagem</button>}\n                      <label style={{ display: "inline-flex", alignItems: "center", gap: 7, border: `1px solid ${T.border}`, background: T.bg3, color: T.textMain, borderRadius: 8, padding: "8px 11px", cursor: isMe ? "pointer" : "default", fontWeight: 700, fontSize: 11.5, opacity: isMe ? 1 : 0.6 }}>\n                        <span style={{ width: 16, height: 16, borderRadius: 4, background: custom.bannerColor, border: `1px solid ${T.border}` }} /> Cor do banner\n                        <input type="color" value={custom.bannerColor} disabled={!isMe} onChange={(e) => patchCustom("bannerColor", e.target.value)} hidden />\n                      </label>\n                      {!isMe && <span style={{ fontSize: 10.5, color: T.textFaint }}>Apenas o dono do perfil pode editar o banner.</span>}\n                    </div>\n                  </div>\n                </section>`;
-r = replaceOnce(bannerSectionOld, bannerSectionNew, 'separate banner controls', next); next = r.text; if (r.changed) changes.push(r.label);
+applyPatch(bannerSectionOld, bannerSectionNew, 'separate banner controls');
 
-const heroOld = '<div style={{ minHeight: 260, background: `linear-gradient(135deg, ${custom.bannerColor}, ${T.bg3})`, borderBottom: `1px solid ${T.border}`, position: "relative" }}>';
-const heroNew = '<div style={{ minHeight: 235, background: `linear-gradient(135deg, ${custom.bannerColor}, ${T.bg3})`, backgroundImage: custom.bannerImage ? `url(${custom.bannerImage})` : `linear-gradient(135deg, ${custom.bannerColor}, ${T.bg3})`, backgroundSize: "cover", backgroundPosition: "center", borderBottom: `1px solid ${T.border}`, position: "relative" }}>';
-r = replaceOnce(heroOld, heroNew, 'banner image rendering', next); next = r.text; if (r.changed) changes.push(r.label);
+applyPatch(
+  '<div style={{ minHeight: 260, background: `linear-gradient(135deg, ${custom.bannerColor}, ${T.bg3})`, borderBottom: `1px solid ${T.border}`, position: "relative" }}>',
+  '<div style={{ minHeight: 235, background: `linear-gradient(135deg, ${custom.bannerColor}, ${T.bg3})`, backgroundImage: custom.bannerImage ? `url(${custom.bannerImage})` : `linear-gradient(135deg, ${custom.bannerColor}, ${T.bg3})`, backgroundSize: "cover", backgroundPosition: "center", borderBottom: `1px solid ${T.border}`, position: "relative" }}>',
+  'banner image rendering'
+);
 
-const heroRowOld = '<div style={{ position: "absolute", left: 0, right: 0, bottom: -76, padding: "0 34px", display: "flex", alignItems: "flex-end", gap: 18 }}>';
-const heroRowNew = '<div style={{ position: "absolute", left: 0, right: 0, bottom: -72, padding: "0 34px", display: "flex", alignItems: "flex-end", gap: 18, zIndex: 4 }}>';
-r = replaceOnce(heroRowOld, heroRowNew, 'avatar layering over banner fix', next); next = r.text; if (r.changed) changes.push(r.label);
+applyPatch(
+  '<div style={{ position: "absolute", left: 0, right: 0, bottom: -76, padding: "0 34px", display: "flex", alignItems: "flex-end", gap: 18 }}>',
+  '<div style={{ position: "absolute", left: 0, right: 0, bottom: -72, padding: "0 34px", display: "flex", alignItems: "flex-end", gap: 18, zIndex: 4 }}>',
+  'avatar layering over banner fix'
+);
 
-const padOld = '<div style={{ padding: "92px 34px 40px", maxWidth: 1100, margin: "0 auto" }}>';
-const padNew = '<div style={{ padding: "102px 34px 40px", maxWidth: 1100, margin: "0 auto", position: "relative" }}>';
-r = replaceOnce(padOld, padNew, 'profile head spacing', next); next = r.text; if (r.changed) changes.push(r.label);
+applyPatch(
+  '<div style={{ padding: "92px 34px 40px", maxWidth: 1100, margin: "0 auto" }}>',
+  '<div style={{ padding: "102px 34px 40px", maxWidth: 1100, margin: "0 auto", position: "relative" }}>',
+  'profile head spacing'
+);
 
-if (next !== source) fs.writeFileSync(file, next, 'utf8');
+if (next !== source) {
+  fs.writeFileSync(file, next, 'utf8');
+}
+
 console.log(`Profile media fix: ${changes.length} change(s). ${changes.join(', ')}`);
