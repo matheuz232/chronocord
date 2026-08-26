@@ -28,6 +28,17 @@ jobs:
       - name: Install dependencies
         run: npm install --include=optional
 
+      - name: Preflight patch scripts
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Path scripts -Filter '*.mjs' -File -Recurse
+          foreach ($file in $files) {
+            node --check $file.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Sintaxe inválida: $($file.FullName)" }
+          }
+          node --check update-updater/main.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Sintaxe inválida: update-updater/main.cjs' }
+
       - name: Validate source
         run: npm run check
 
