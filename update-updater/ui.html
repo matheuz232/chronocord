@@ -1,1 +1,63 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self';script-src 'self';style-src 'self' 'unsafe-inline';img-src 'self' data:;object-src 'none';base-uri 'none'"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChronoCord Updater</title><style>*{box-sizing:border-box}body{margin:0;background:#090812;color:#fff;font-family:Segoe UI,Arial,sans-serif}.wrap{padding:28px}.logo{width:74px;height:74px;border-radius:22px;margin:auto;background:radial-gradient(circle at 50% 50%,#000 0 22%,transparent 23%),conic-gradient(from 20deg,#4b00a8,#b026ff,#5b00d6,#1b003f,#4b00a8);box-shadow:0 0 40px #8d2cff77;position:relative}.logo:after{content:"";position:absolute;inset:15px;border-radius:50%;border:5px solid #b026ff88;transform:rotate(-18deg) scaleX(1.25)}h1{text-align:center;margin:20px 0 6px;font-size:24px}p{text-align:center;color:#aaa8bc;line-height:1.5}.card{margin-top:22px;padding:18px;border:1px solid #30264a;background:#11101c;border-radius:16px}.version{font-size:22px;font-weight:800;color:#c18cff}.notes{white-space:pre-wrap;color:#b9b5c9;font-size:13px;max-height:180px;overflow:auto;margin-top:12px}.buttons{display:flex;gap:10px;margin-top:20px}.buttons button{flex:1;padding:13px;border-radius:11px;border:1px solid #3b3157;background:#211b2f;color:#fff;font-weight:700}.buttons .primary{background:linear-gradient(135deg,#8d2cff,#5d24d9);border:0}.progress{height:8px;background:#211c2e;border-radius:8px;overflow:hidden;margin-top:18px}.bar{height:100%;width:0;background:linear-gradient(90deg,#6b1dff,#c65aff)}.status{text-align:center;font-size:12px;color:#9f9aac;margin-top:10px}.mandatory{background:#431b28;border:1px solid #7e3048;border-radius:10px;padding:10px;color:#ff9aae;font-size:12px;margin-top:12px}</style></head><body><div class="wrap"><div class="logo"></div><h1>Atualização disponível</h1><p>Uma nova versão do ChronoCord está pronta.</p><div class="card"><div class="version" id="version">—</div><div id="title"></div><div class="notes" id="notes"></div><div id="mandatory"></div><div class="buttons"><button id="later">Depois</button><button class="primary" id="update">Atualizar agora</button></div><div class="progress"><div class="bar" id="bar"></div></div><div class="status" id="status">Preparando…</div></div></div><script>const $=id=>document.getElementById(id);window.updaterAPI.onEvent(e=>{if(e.type==='available'){$('version').textContent='ChronoCord '+e.version;$('title').textContent=e.title;$('notes').textContent=e.notes||'Correções e melhorias.';$('mandatory').innerHTML=e.mandatory?'<div class="mandatory">Esta atualização é obrigatória.</div>':'';$('later').style.display=e.mandatory?'none':'';$('status').textContent='Pronto para atualizar.'}if(e.type==='state'){$('status').textContent=e.text||'';$('bar').style.width=(e.progress||0)+'%';if(e.step==='done'){$('update').disabled=true;$('later').disabled=true}}if(e.type==='error')$('status').textContent=e.text});$('update').onclick=async()=>{ $('update').disabled=true;$('later').disabled=true;await window.updaterAPI.update()};$('later').onclick=()=>window.updaterAPI.later();</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self';script-src 'self';style-src 'self' 'unsafe-inline';img-src 'self' data:;object-src 'none';base-uri 'none'">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ChronoCord</title>
+  <style>
+    *{box-sizing:border-box}
+    :root{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#f7f4ff;background:transparent}
+    body{margin:0;background:transparent;overflow:hidden}
+    .window{width:100vw;height:100vh;padding:1px;border-radius:22px;background:linear-gradient(145deg,rgba(160,110,255,.85),rgba(69,45,110,.78));box-shadow:0 28px 80px rgba(0,0,0,.55),0 0 50px rgba(133,77,255,.2)}
+    .surface{width:100%;height:100%;border-radius:21px;background:radial-gradient(circle at 15% 0%,rgba(133,78,255,.18),transparent 42%),linear-gradient(160deg,#17132a,#0d0b15);overflow:hidden;display:flex;flex-direction:column}
+    .titlebar{height:42px;display:flex;align-items:center;padding:0 14px;border-bottom:1px solid rgba(255,255,255,.07);-webkit-app-region:drag}
+    .brand{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:800;letter-spacing:.1px}
+    .brand-mark{width:21px;height:21px;border-radius:7px;background:linear-gradient(135deg,#c05cff,#6d39ff);box-shadow:0 0 18px rgba(177,86,255,.45);display:grid;place-items:center;font-size:11px}
+    .content{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:22px 26px 24px;text-align:center}
+    .orb{width:62px;height:62px;border-radius:20px;margin-bottom:14px;background:radial-gradient(circle at 32% 28%,#d3a6ff 0 6%,transparent 7%),linear-gradient(135deg,#9d49ff,#5e2fe4);box-shadow:0 0 28px rgba(157,73,255,.33);display:grid;place-items:center;animation:pulse 2.4s ease-in-out infinite}
+    .orb::after{content:"";width:25px;height:25px;border-radius:50%;border:3px solid rgba(255,255,255,.45);transform:rotate(-18deg) scaleX(1.2)}
+    h1{font-size:18px;margin:0 0 6px;font-weight:800}
+    .message{min-height:18px;color:#bdb6ce;font-size:12px;line-height:1.45}
+    .progress{width:100%;height:9px;margin-top:19px;background:#29233c;border-radius:999px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+    .bar{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#7137ff,#b65aff,#8d45ff);box-shadow:0 0 14px rgba(143,68,255,.55);transition:width .25s ease}
+    .percent{margin-top:9px;color:#8f88a5;font-size:10px;min-height:12px}
+    @keyframes pulse{0%,100%{transform:translateY(0);box-shadow:0 0 28px rgba(157,73,255,.33)}50%{transform:translateY(-2px);box-shadow:0 0 36px rgba(157,73,255,.48)}}
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="surface">
+      <div class="titlebar">
+        <div class="brand"><div class="brand-mark">◉</div><span>ChronoCord</span></div>
+      </div>
+      <main class="content">
+        <div class="orb" aria-hidden="true"></div>
+        <h1>Atualizando o ChronoCord</h1>
+        <div class="message" id="status">Preparando atualização…</div>
+        <div class="progress" aria-hidden="true"><div class="bar" id="bar"></div></div>
+        <div class="percent" id="percent"></div>
+      </main>
+    </div>
+  </div>
+  <script>
+    const $=id=>document.getElementById(id);
+    window.updaterAPI.onEvent(e=>{
+      if(e.type==='state'){
+        $('status').textContent=e.text||'Atualizando o ChronoCord…';
+        if(Number.isFinite(e.progress)){
+          const p=Math.max(0,Math.min(100,Number(e.progress)||0));
+          $('bar').style.width=p+'%';
+          $('percent').textContent=p>0?p+'%':'';
+        }
+      }
+      if(e.type==='error'){
+        $('status').textContent='Não foi possível concluir a atualização.';
+        $('bar').style.width='100%';
+        $('bar').style.background='linear-gradient(90deg,#9f355b,#e05f7d)';
+        $('percent').textContent='';
+      }
+    });
+  </script>
+</body>
+</html>
