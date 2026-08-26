@@ -1,0 +1,23 @@
+{
+  "name": "chronocord-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ChronoCord Platform Server — compatibilidade, voz, mídia e API versionada",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js",
+    "self-test": "node scripts/self-test.mjs"
+  },
+  "engines": {
+    "node": ">=20 <25"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^3.3.8",
+    "socket.io": "^4.8.1"
+  }
+}

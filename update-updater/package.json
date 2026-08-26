@@ -1,0 +1,32 @@
+{
+  "name": "chronocord-updater",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "dist:win": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "38.0.0",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.chronocord.updater",
+    "productName": "ChronoCord Updater",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "ui.html",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "artifactName": "ChronoCordUpdater.exe"
+    },
+    "electronVersion": "38.0.0"
+  }
+}

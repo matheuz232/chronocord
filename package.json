@@ -1,0 +1,78 @@
+{
+  "name": "chronocord-desktop",
+  "version": "1.0.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "prebuild": "node build-preflight.mjs",
+    "build": "vite build",
+    "desktop": "npm run build && electron .",
+    "dist": "npm run build && npm run build:updater && electron-builder",
+    "android:sync": "npm run build && npx cap sync android",
+    "check:server": "node --check server/server.js",
+    "check:electron": "node --check electron/main.cjs && node --check electron/preload.cjs",
+    "check": "node preflight.mjs && node build-preflight.mjs && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check update-updater/main.cjs",
+    "build:updater": "node scripts-build.mjs",
+    "diagnose": "node diagnose-build.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.4.3",
+    "@capacitor/core": "7.4.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "socket.io-client": "4.8.1"
+  },
+  "devDependencies": {
+    "@esbuild/win32-x64": "0.25.9",
+    "@vitejs/plugin-react": "4.3.4",
+    "electron": "38.0.0",
+    "electron-builder": "26.0.12",
+    "esbuild": "0.25.9",
+    "vite": "6.3.5"
+  },
+  "build": {
+    "appId": "com.chronocord.app",
+    "productName": "ChronoCord",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "ChronoCord-Setup-${version}.${ext}",
+      "icon": "assets/chronocord.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ChronoCord",
+      "perMachine": false,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "assets/chronocord.ico",
+      "uninstallerIcon": "assets/chronocord.ico",
+      "installerHeaderIcon": "assets/chronocord.ico",
+      "installerSidebar": "assets/installerSidebar.bmp",
+      "installerHeader": "assets/installerHeader.bmp"
+    },
+    "extraResources": [
+      {
+        "from": "build/updater/ChronoCordUpdater.exe",
+        "to": "ChronoCordUpdater.exe"
+      },
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
+    "electronVersion": "38.0.0",
+    "directories": {
+      "output": "release"
+    }
+  },
+  "main": "electron/main.cjs"
+}

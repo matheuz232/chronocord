@@ -1,0 +1,17 @@
+CHRONOCORD 0.2.0 — INSTALAÇÃO WINDOWS
+
+1. Instale Node.js 18 ou mais recente.
+2. Extraia o ZIP.
+3. Abra PowerShell na pasta.
+4. Execute: npm install
+5. Execute: npm run desktop
+
+Para gerar instalador:
+6. Execute: npm run dist
+7. O instalador aparecerá na pasta dist-electron/ ou release/, conforme a versão do electron-builder.
+
+SERVIDOR
+O aplicativo usa por padrão:
+https://chronocord-server.onrender.com
+
+Se o servidor estiver fora do ar, use a opção de endereço do servidor na tela de login para apontar para outro backend.

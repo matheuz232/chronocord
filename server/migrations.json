@@ -1,0 +1,7 @@
+{
+  "currentSchema": 2,
+  "steps": [
+    {"from": 0, "to": 1, "description": "Cria coleções do ecossistema ChronoCord"},
+    {"from": 1, "to": 2, "description": "Normaliza metadados de compatibilidade e presença"}
+  ]
+}

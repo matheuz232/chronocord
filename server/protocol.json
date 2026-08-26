@@ -1,0 +1,30 @@
+{
+  "platformVersion": "1.0.0",
+  "protocolVersion": 1,
+  "minimumSupportedClient": "0.5.0",
+  "maximumTestedClient": "1.x",
+  "compatibility": {
+    "legacySocketEvents": true,
+    "legacyApiPaths": true,
+    "versionNegotiation": true
+  },
+  "features": {
+    "auth": true,
+    "servers": true,
+    "channels": true,
+    "dms": true,
+    "voice": true,
+    "webrtcSignaling": true,
+    "camera": true,
+    "screenShareSignaling": true,
+    "jukeboxSync": true,
+    "watch2Sync": true,
+    "soundboard": true,
+    "roles": true,
+    "moderation": true,
+    "audit": true,
+    "customAssets": true,
+    "profilePerServer": true,
+    "futureFeatureFlags": true
+  }
+}

@@ -1,0 +1,19 @@
+CHRONOCORD SERVER 0.2.2 — RENDER
+
+Build Command:
+npm install
+
+Start Command:
+npm start
+
+Environment:
+NODE_ENV=production
+JWT_SECRET=<segredo aleatório com pelo menos 32 caracteres>
+CLIENT_ORIGINS=http://localhost:5173,https://chronocord-server.onrender.com
+
+O cliente Electron usa o servidor oficial embutido:
+https://chronocord-server.onrender.com
+
+Não coloque JWT_SECRET no código nem envie .env ao GitHub.
+
+IMPORTANTE: esta versão ainda usa data.json para compatibilidade. Para produção persistente após redeploys, migre para PostgreSQL.
