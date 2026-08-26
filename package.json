@@ -12,7 +12,7 @@
     "android:sync": "npm run build && npx cap sync android",
     "check:server": "node --check server/server.js",
     "check:electron": "node --check electron/main.cjs && node --check electron/preload.cjs",
-    "check": "node preflight.mjs && node build-preflight.mjs && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check update-updater/main.cjs",
+    "check": "node preflight.mjs && node build-preflight.mjs && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check update-updater/main.cjs && node scripts/verify-release-config.mjs",
     "diagnose": "node diagnose-build.mjs",
     "build:updater": "node scripts-build.mjs"
   },
