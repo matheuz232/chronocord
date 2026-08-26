@@ -1,0 +1,12 @@
+node_modules/
+dist/
+release/
+build/updater/
+update-updater/node_modules/
+update-updater/release/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
