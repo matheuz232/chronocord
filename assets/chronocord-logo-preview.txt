@@ -1,1 +1,0 @@
-ChronoCord icon source: assets/chronocord-logo.svg
