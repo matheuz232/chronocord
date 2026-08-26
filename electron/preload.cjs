@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   socketEmit: (payload) => ipcRenderer.invoke('socket:emit', payload),
   socketStatus: () => ipcRenderer.invoke('socket:status'),
   socketDisconnect: () => ipcRenderer.invoke('socket:disconnect'),
+  getDesktopSources: (options = {}) => ipcRenderer.invoke('media:get-desktop-sources', options),
   onSocketEvent: (callback) => {
     const handler = (_event, payload) => callback(payload);
     ipcRenderer.on('socket:event', handler);
