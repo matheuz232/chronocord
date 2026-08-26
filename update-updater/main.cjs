@@ -32,26 +32,25 @@ async function resolveLatest(){
   }
   return requestJson(MANIFEST_URL);
 }
-
 function cmp(a,b){const pa=String(a).replace(/^v/i,'').split('-')[0].split('.').map(Number);const pb=String(b).replace(/^v/i,'').split('-')[0].split('.').map(Number);for(let i=0;i<3;i++){if((pa[i]||0)!==(pb[i]||0))return (pa[i]||0)-(pb[i]||0)}return 0}
 function requestJson(url){return new Promise((resolve,reject)=>{const u=new URL(url);const req=https.get(u,{headers:{'User-Agent':'ChronoCord-Updater/1.0','Accept':'application/json','Cache-Control':'no-cache'}},res=>{let data='';res.setEncoding('utf8');res.on('data',d=>data+=d);res.on('end',()=>{if(res.statusCode<200||res.statusCode>=300)return reject(new Error(`HTTP ${res.statusCode}`));try{resolve(JSON.parse(data))}catch{reject(new Error('Manifesto inválido.'))}})});req.setTimeout(15000,()=>req.destroy(new Error('Tempo esgotado.')));req.on('error',reject)})}
 function download(url,dest,onProgress){return new Promise((resolve,reject)=>{const u=new URL(url);const file=fs.createWriteStream(dest);const req=https.get(u,{headers:{'User-Agent':'ChronoCord-Updater/1.0'}},res=>{if(res.statusCode>=300&&res.statusCode<400&&res.headers.location){file.close();fs.rmSync(dest,{force:true});return download(new URL(res.headers.location,u).href,dest,onProgress).then(resolve,reject)}if(res.statusCode!==200){file.close();fs.rmSync(dest,{force:true});return reject(new Error(`Download HTTP ${res.statusCode}`))}const total=Number(res.headers['content-length']||0);let done=0;res.on('data',chunk=>{done+=chunk.length;onProgress?.(total?Math.round(done/total*100):0)});res.pipe(file);file.on('finish',()=>file.close(resolve));});req.setTimeout(120000,()=>req.destroy(new Error('Download expirou.')));req.on('error',e=>{file.close();fs.rmSync(dest,{force:true});reject(e)})})}
 function sha256(file){return new Promise((resolve,reject)=>{const h=crypto.createHash('sha256');const s=fs.createReadStream(file);s.on('data',d=>h.update(d));s.on('end',()=>resolve(h.digest('hex')));s.on('error',reject)})}
 function waitPid(pid){return new Promise(resolve=>{if(!pid||pid===process.pid)return resolve();const started=Date.now();const check=()=>{try{process.kill(pid,0);if(Date.now()-started>20000)return resolve();setTimeout(check,250)}catch{resolve()}};check()})}
-function createWindow(){win=new BrowserWindow({width:520,height:650,resizable:false,show:false,backgroundColor:'#090812',autoHideMenuBar:true,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,preload:path.join(__dirname,'preload.cjs')}});win.loadFile(path.join(__dirname,'ui.html'));win.once('ready-to-show',()=>win.show())}
+function createWindow(){win=new BrowserWindow({width:400,height:250,minWidth:400,minHeight:250,maxWidth:400,maxHeight:250,resizable:false,frame:false,transparent:true,backgroundColor:'#00000000',show:false,skipTaskbar:true,hasShadow:true,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,preload:path.join(__dirname,'preload.cjs')}});win.loadFile(path.join(__dirname,'ui.html'));win.once('ready-to-show',()=>win.show())}
 function send(type,data){if(win&&!win.isDestroyed())win.webContents.send('updater:event',{type,...data})}
 async function performUpdate(manifest){
   const dest=path.join(app.getPath('temp'),`ChronoCord-Setup-${manifest.version}.exe`);
-  send('state',{step:'download',progress:0,text:'Baixando o instalador…'});
-  await download(manifest.url,dest,p=>send('state',{step:'download',progress:p,text:`Baixando o instalador… ${p}%`}));
-  send('state',{step:'verify',progress:100,text:'Verificando integridade…'});
+  send('state',{step:'download',progress:0,text:'Baixando atualização…'});
+  await download(manifest.url,dest,p=>send('state',{step:'download',progress:p,text:'Baixando atualização…'}));
+  send('state',{step:'verify',progress:100,text:'Verificando atualização…'});
   const actual=await sha256(dest); if(actual.toLowerCase()!==String(manifest.sha256||'').toLowerCase()){fs.rmSync(dest,{force:true});throw new Error('A verificação de integridade falhou. O instalador foi descartado.')}
-  send('state',{step:'close',progress:100,text:'Fechando o ChronoCord…'});
-  if (appPid && process.platform === 'win32') { await new Promise((resolve,reject)=>execFile('taskkill',['/PID',String(appPid),'/T'],{windowsHide:true},()=>resolve())); }
+  send('state',{step:'close',progress:100,text:'Preparando atualização…'});
+  if (appPid && process.platform === 'win32') { await new Promise((resolve)=>execFile('taskkill',['/PID',String(appPid),'/T'],{windowsHide:true},()=>resolve())); }
   await waitPid(appPid);
-  send('state',{step:'install',progress:100,text:'Instalando a nova versão…'});
-  const child=spawn(dest,['--updated'],{detached:true,stdio:'ignore',windowsHide:false}); child.unref();
-  send('state',{step:'done',progress:100,text:'Atualização iniciada. O ChronoCord será aberto novamente.'});
+  send('state',{step:'install',progress:100,text:'Instalando atualização…'});
+  const child=spawn(dest,['--updated'],{detached:true,stdio:'ignore',windowsHide:true}); child.unref();
+  send('state',{step:'done',progress:100,text:'Abrindo o ChronoCord…'});
   setTimeout(()=>app.quit(),1200);
 }
 ipcMain.handle('update-now',async()=>{try{const m=await resolveLatest();await performUpdate(m);return {ok:true}}catch(e){send('error',{text:e.message||'Não foi possível atualizar.'});return {ok:false,error:e.message}}});
