@@ -25,11 +25,10 @@ if (!fs.readFileSync(sourcePath, 'utf8').includes('watch2Current?.videoId, watch
 }
 
 const voiceAnchor = '      if (!chan || !["voice","stage"].includes(String(chan.type).toLowerCase())) {\n        setVoiceJoinStatus("Este canal não é um canal de voz válido.");';
-const voiceReplacement = `      if (!chan || !["voice","stage"].includes(String(chan.type).toLowerCase())) {\n        setVoiceJoinStatus("Este canal não é um canal de voz válido.");`;
-// Keep the original validation untouched; the actual connection gate is inserted immediately before voice-join.
 const voiceGateFrom = '        socket.emit("voice-join", { serverId: activeEra, channelId: chanId }, (ack={}) => {';
 const voiceGateTo = `        if (!socket.connected) {\n          setVoiceJoinStatus("Conectando ao serviço de voz…");\n          const connection = await socket.connect();\n          if (!connection?.ok) {\n            throw new Error(connection?.error || "Não foi possível conectar ao serviço de voz.");\n          }\n        }\n        socket.emit("voice-join", { serverId: activeEra, channelId: chanId }, (ack={}) => {`;
-if (fs.readFileSync(sourcePath, 'utf8').includes(voiceAnchor) && !fs.readFileSync(sourcePath, 'utf8').includes('setVoiceJoinStatus("Conectando ao serviço de voz…")')) {
+const sourceSnapshot = fs.readFileSync(sourcePath, 'utf8');
+if (sourceSnapshot.includes(voiceAnchor) && !sourceSnapshot.includes('setVoiceJoinStatus("Conectando ao serviço de voz…")')) {
   patches.push(replaceOnce(sourcePath, voiceGateFrom, voiceGateTo, 'Voice connection gate'));
 }
 
@@ -41,7 +40,7 @@ if (!mainNext.includes("clientVersion: app.getVersion()")) {
   if (!mainNext.includes(from)) throw new Error('Patch não encontrado: Socket.IO client metadata');
   mainNext = mainNext.replace(from, to);
 }
-if (!mainNext.includes("youtube.com/*'))")) {
+if (!mainNext.includes('const youtubeFilter =')) {
   const anchor = "const serverFilter = { urls: [`${SERVER_URL}/*`] };";
   const insert = `${anchor}\n  const youtubeFilter = { urls: ['https://www.youtube.com/*', 'https://www.youtube-nocookie.com/*'] };\n  session.defaultSession.webRequest.onBeforeSendHeaders(youtubeFilter, (details, callback) => {\n    const headers = { ...details.requestHeaders };\n    headers['Referer'] = 'https://chronocord.app/';\n    headers['Origin'] = 'https://chronocord.app';\n    callback({ requestHeaders: headers });\n  });`;
   if (!mainNext.includes(anchor)) throw new Error('Patch não encontrado: YouTube request filter');
