@@ -1,3 +1,5 @@
+import { applyChronoCordMediaFeatures } from './chronocord-media-transform.mjs';
+
 export function chronocordProductFeatures() {
   return {
     name: 'chronocord-product-features',
@@ -103,6 +105,12 @@ export function chronocordProductFeatures() {
       if (output.includes(watch2Marker) && !output.includes('cc-jukebox-mini')) {
         const mini = `      {nowPlaying && !jukeboxOpen && !watch2Open && <div className="cc-jukebox-mini"><div className="cc-jukebox-mini-art">♫</div><div className="cc-jukebox-mini-copy"><strong>{nowPlaying.title}</strong><span>{isPlaying ? 'Tocando agora' : 'Pausado'}</span></div><button type="button" onClick={() => isPlaying ? (pauseJukeboxMedia(), setIsPlaying(false), emitJukeboxState({isPlaying:false})) : playJukeboxMedia()} className="cc-jukebox-mini-action">{isPlaying ? 'Ⅱ' : '▶'}</button><button type="button" onClick={() => setJukeboxOpen(true)} className="cc-jukebox-mini-action" title="Abrir Jukebox">♪</button></div>}\n\n`;
         output = output.replace(watch2Marker, mini + watch2Marker);
+        changed = true;
+      }
+
+      const mediaOutput = applyChronoCordMediaFeatures(output);
+      if (mediaOutput !== output) {
+        output = mediaOutput;
         changed = true;
       }
 
