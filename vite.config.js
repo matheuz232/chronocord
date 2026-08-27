@@ -4,6 +4,7 @@ import { chronocordSettingsCenter } from './build/chronocord-settings-transform.
 import { chronocordProductFeatures } from './build/chronocord-product-transform.mjs';
 import { chronocordProfileSummary } from './build/chronocord-profile-transform.mjs';
 import { chronocordFeatureInteractions } from './build/chronocord-feature-transform.mjs';
+import { chronocordScreenShare } from './build/chronocord-screen-share-transform.mjs';
 
 function chronocordWebRtcFix() {
   return {
@@ -66,7 +67,7 @@ function chronocordWebRtcFix() {
 }
 
 export default defineConfig({
-  plugins: [chronocordWebRtcFix(), chronocordSettingsCenter(), chronocordProductFeatures(), chronocordProfileSummary(), chronocordFeatureInteractions(), react()],
+  plugins: [chronocordWebRtcFix(), chronocordScreenShare(), chronocordSettingsCenter(), chronocordProductFeatures(), chronocordProfileSummary(), chronocordFeatureInteractions(), react()],
   base: './',
   build: { target: 'es2020' },
 });
