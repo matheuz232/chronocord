@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import ChronoCord from './ChronoCord.jsx';
 import { MediaControls } from './media-controls.jsx';
 import './app.css';
+import './chronocord-modern.css';
 
 class ChronoCordErrorBoundary extends React.Component {
   constructor(props) {
