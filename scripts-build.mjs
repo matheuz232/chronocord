@@ -25,7 +25,8 @@ if (!fs.existsSync(sourcePath)) throw new Error('update-updater/Program.cs não 
 let source = fs.readFileSync(sourcePath, 'utf8');
 source = source
   .replaceAll('__MANIFEST_URL__', csharpString(manifest))
-  .replaceAll('__RELEASE_REPO__', csharpString(releaseRepo));
+  .replaceAll('__RELEASE_REPO__', csharpString(releaseRepo))
+  .replaceAll('Timer timer = new Timer();', 'System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();');
 
 const generatedDir = path.join(root, 'build', 'generated');
 const outputDir = path.join(root, 'build', 'updater');
