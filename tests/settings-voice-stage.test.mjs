@@ -12,12 +12,13 @@ const transformed = chronocordFeatureInteractions().transform(source, 'C:/repo/s
 test('voice stage opens automatically only after a confirmed voice join', () => {
   assert.match(transformed, /async function openVoiceStage\(tryFullscreen = false\)/);
 
-  const confirmedJoinStart = transformed.indexOf('setVoiceState(v => ({ ...v, connected:true }));');
-  const confirmedJoinEnd = transformed.indexOf('finish();', confirmedJoinStart);
-  assert.ok(confirmedJoinStart >= 0 && confirmedJoinEnd > confirmedJoinStart, 'confirmed join block was not found');
-  const confirmedJoinBlock = transformed.slice(confirmedJoinStart, confirmedJoinEnd);
-  assert.ok(confirmedJoinBlock.includes('setVoiceJoinStatus("");'), 'confirmed join should clear the join status');
-  assert.ok(confirmedJoinBlock.includes('void openVoiceStage(true);'), 'confirmed join should open the voice stage');
+  const joinVoiceStart = transformed.indexOf('async function joinVoice(chanId, chanName)');
+  const joinVoiceEnd = transformed.indexOf('function leaveVoice()', joinVoiceStart);
+  assert.ok(joinVoiceStart >= 0 && joinVoiceEnd > joinVoiceStart, 'joinVoice function was not found');
+  const joinVoiceBlock = transformed.slice(joinVoiceStart, joinVoiceEnd);
+  assert.ok(joinVoiceBlock.includes('setVoiceState(v => ({ ...v, connected:true }));'), 'confirmed join should mark voice connected');
+  assert.ok(joinVoiceBlock.includes('setVoiceJoinStatus("");'), 'confirmed join should clear the join status');
+  assert.ok(joinVoiceBlock.includes('void openVoiceStage(true);'), 'confirmed join should open the voice stage');
 
   const voiceJoinedStart = transformed.indexOf('socket.on("voice-joined"');
   const voiceJoinedEnd = transformed.indexOf('socket.on("voice-participants"', voiceJoinedStart);
