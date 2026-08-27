@@ -4,8 +4,8 @@ export function chronocordFeatureInteractions() {
     enforce: 'pre',
     transform(code, id) {
       if (!id.endsWith('/src/ChronoCord.jsx') && !id.endsWith('\\src\\ChronoCord.jsx')) return null;
-      let output = code;
-      let changed = false;
+      let output = code.replace(/\r\n/g, '\n');
+      let changed = output !== code;
 
       const stageState = '  const [voiceStageOpen, setVoiceStageOpen] = useState(false);';
       if (output.includes(stageState) && !output.includes('async function openVoiceStage(tryFullscreen = false)')) {
