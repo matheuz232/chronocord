@@ -2,7 +2,7 @@
 
 ## Goal
 
-Reduce the total Windows delivery footprint for ChronoCord 1.0.3 to at most 285 MB across the primary downloadable artifacts, while preserving installer behavior, updater behavior, smoke-test coverage, and current application functionality. The optimized build must also make `npm audit` report zero known vulnerabilities for the dependency tree installed by CI.
+Reduce the Windows delivery footprint for ChronoCord 1.0.3 to one canonical downloadable installer of at most 285 MB, while preserving the requested animated/branded installer experience, updater behavior, smoke-test coverage, and current application functionality. The optimized build must also make `npm audit` report zero known vulnerabilities for the dependency tree installed by CI.
 
 ## Current baseline
 
@@ -36,28 +36,34 @@ Replace the Electron-based updater with a small Windows-native helper that prese
 - follow a bounded number of redirects;
 - verify SHA-256 before installation;
 - wait for the running ChronoCord process to exit;
-- invoke the verified NSIS installer silently;
+- invoke the verified installer silently;
 - relaunch the installed ChronoCord executable;
 - abort safely on timeout, checksum mismatch, unsupported URL, failed download, or failed installer exit code;
-- remain invisible unless an update is actually being applied.
+- remain invisible unless a newer update is actually being applied.
 
-The helper may be implemented using PowerShell compiled/wrapped into an executable only if the wrapper adds negligible size and the resulting binary can be smoke-tested in CI. Prefer a small compiled helper using tooling already available on the Windows runner if that gives a more deterministic artifact.
+Prefer a small compiled .NET Framework helper because the Windows runner already provides the compiler/framework and Windows 10/11 provide the framework runtime without bundling another Chromium runtime.
 
-### 3. Lightweight installer experience
+### 3. One lightweight animated installer
 
-Remove Electron from the `ChronoCord-Installer-1.0.3.exe` bootstrapper. Preserve the intent of the current branded installer experience using NSIS/native Windows UI rather than another Chromium runtime.
+The public Windows delivery contains exactly one primary executable:
 
-The optimized delivery may use a single primary NSIS installer as the canonical download if it preserves:
+- `ChronoCord-Installer-1.0.3.exe`.
+
+The existing `ChronoCord-Setup-1.0.3.exe` may still be generated temporarily by electron-builder/NSIS as an internal payload because it already owns installation-directory handling, shortcuts, uninstall registration, silent installation, and app-data behavior. It must not be uploaded or published as a second user-facing installer.
+
+Replace the Electron bootstrapper with a small Windows-native animated launcher. The launcher may append the NSIS setup payload to its own executable and extract/verify it at runtime. It must preserve:
 
 - ChronoCord branding;
+- animated progress UI;
 - install-directory selection;
-- desktop and Start menu shortcuts;
-- silent install support for CI and updater use;
+- desktop and Start menu shortcuts through the internal NSIS payload;
+- silent/smoke-test support for CI and updater use;
 - reliable uninstall behavior;
 - non-destructive application-data handling;
-- a clear install progress experience.
+- launch-after-install behavior;
+- payload SHA-256 validation before execution.
 
-If a second installer executable remains, it must not duplicate the full Electron runtime and must keep the combined primary executable size under the target.
+The final `ChronoCord-Installer-1.0.3.exe` should be close to the compressed NSIS payload size rather than adding another Electron runtime.
 
 ### 4. Packaging optimization
 
@@ -74,7 +80,7 @@ Rules:
 - do not use `--force` blindly;
 - keep Electron and electron-builder on actively supported/stable versions compatible with the project;
 - add an explicit CI audit gate after dependency installation;
-- if nested helper projects remain, their installs must also pass audit or be removed from the architecture.
+- native helper projects must not require separate npm dependency trees.
 
 ### 6. CI and verification
 
@@ -87,14 +93,17 @@ The Windows workflow must fail unless all of the following pass:
 - build preflight;
 - production Vite build;
 - Windows packaging;
-- installer existence and minimum-size sanity checks;
-- silent NSIS installation smoke test;
+- internal NSIS payload existence and minimum-size sanity check;
+- final animated installer existence and minimum-size sanity check;
+- final artifact count check proving exactly one primary downloadable `.exe`;
+- silent installation smoke test through the final installer;
+- animated/native installer smoke test;
 - updater/helper smoke test;
-- SHA-256 generation;
-- primary artifact combined-size check <= 285 MB;
-- artifact upload.
+- SHA-256 generation for the final installer;
+- final installer size check <= 285,000,000 bytes;
+- artifact upload containing only the final installer and its `.sha256` file.
 
-The workflow should print the exact byte sizes of the final primary executable(s) and their aggregate size.
+The workflow must print the exact byte size of the final downloadable installer.
 
 ## Compatibility constraints
 
@@ -109,20 +118,23 @@ The workflow should print the exact byte sizes of the final primary executable(s
 
 Hard target:
 
-- aggregate size of the primary downloadable Windows executable artifacts <= 285,000,000 bytes.
+- exactly one primary downloadable Windows executable;
+- `ChronoCord-Installer-1.0.3.exe` <= 285,000,000 bytes.
 
 Preferred target:
 
-- one canonical installer below 250 MB, with any updater/helper small enough that the total remains comfortably below 285 MB.
+- `ChronoCord-Installer-1.0.3.exe` below 250 MB;
+- native updater/helper sufficiently small that embedding it does not materially change the application payload size.
 
-The size gate must be implemented in CI and measured from the exact files uploaded as release/download artifacts.
+The size gate must be implemented in CI and measured from the exact file uploaded as the release/download artifact.
 
 ## Security success criteria
 
 - root `npm audit --audit-level=low` returns exit code 0;
 - CI reports 0 vulnerabilities after install;
 - no security gate is bypassed with `continue-on-error`;
-- checksum verification remains mandatory for downloaded updates.
+- checksum verification remains mandatory for downloaded updates and for the final installer's embedded NSIS payload;
+- helper projects do not introduce separate npm installs.
 
 ## Rollback criteria
 
@@ -130,6 +142,7 @@ Reject an optimization if any of the following occurs:
 
 - silent installation no longer succeeds;
 - installed `ChronoCord.exe` is missing or invalid;
+- final animated installer no longer validates its embedded payload before execution;
 - updater no longer verifies checksum before installing;
 - updater cannot relaunch the application reliably;
 - a previously green Settings/product/media/screen-share/voice test fails;
@@ -137,10 +150,10 @@ Reject an optimization if any of the following occurs:
 
 ## Implementation order
 
-1. Add security and size regression tests/gates that fail on the current baseline.
+1. Add security, single-artifact, and size regression tests/gates that fail on the current baseline.
 2. Upgrade the dependency/toolchain graph until audit is clean.
-3. Replace the Electron updater helper with a lightweight Windows helper and update its tests.
-4. Remove the Electron bootstrapper and converge on a lightweight/native installer flow.
-5. Apply package-resource compression/exclusion optimizations.
-6. Run the complete Windows workflow and compare exact byte sizes against the baseline.
-7. Upload the optimized artifact only after all tests, audit, smoke tests, SHA-256, and size gates pass.
+3. Replace the Electron updater helper with a lightweight Windows-native helper and update its tests.
+4. Replace the Electron installer bootstrapper with a lightweight Windows-native animated launcher that carries the NSIS setup as a verified embedded/appended payload.
+5. Remove the internal Setup from the uploaded/release artifact set and apply package-resource compression/exclusion optimizations.
+6. Run the complete Windows workflow and compare the exact final installer byte size against the baseline.
+7. Upload the optimized single-installer artifact only after all tests, audit, smoke tests, SHA-256, and size gates pass.
