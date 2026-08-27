@@ -48,3 +48,11 @@ test('updater waits for a silent NSIS install and relaunches the installed Chron
   assert.match(updaterMainSource, /spawn\(appExe,\s*\[\],\s*\{\s*detached:\s*true,\s*stdio:\s*'ignore',\s*windowsHide:\s*false\s*\}\)/);
   assert.doesNotMatch(updaterMainSource, /spawn\(dest,\s*\['--updated'\]/);
 });
+
+test('checksum downloads follow bounded HTTPS redirects before validation', () => {
+  assert.match(updaterMainSource, /function\s+requestText\(url,\s*redirects\s*=\s*0\)/);
+  assert.match(updaterMainSource, /if\s*\(u\.protocol\s*!==\s*'https:'\)/);
+  assert.match(updaterMainSource, /if\s*\(redirects\s*>\s*5\)/);
+  assert.match(updaterMainSource, /requestText\(new URL\(res\.headers\.location,\s*u\)\.href,\s*redirects\s*\+\s*1\)/);
+  assert.match(updaterMainSource, /const\s+checksumText\s*=\s*await\s+requestText\(sha\.browser_download_url\)/);
+});
