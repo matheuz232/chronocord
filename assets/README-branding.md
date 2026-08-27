@@ -1,0 +1,1 @@
+A logo transparente oficial do ChronoCord é `chronocord-logo.svg` / `chronocord-logo-transparent.svg`. Os formatos PNG/ICO são gerados a partir do mesmo desenho para manter a marca consistente.
