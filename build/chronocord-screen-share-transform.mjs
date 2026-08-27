@@ -85,6 +85,22 @@ function StageVideo({ stream, muted=false, name='O usuário' }) {
         changed = true;
       }
 
+      const localVideoRefsMarker = `  const localVideoTrackRef = useRef(null);
+  const localVideoKindRef = useRef(null);`;
+      if (output.includes(localVideoRefsMarker) && !output.includes('const localStageVideoStream = useMemo')) {
+        output = output.replace(localVideoRefsMarker, `${localVideoRefsMarker}
+  const localStageVideoStream = useMemo(() => {
+    const track = localVideoTrackRef.current;
+    return track && track.readyState === 'live' ? new MediaStream([track]) : null;
+  }, [voiceCameraOn, voiceScreenSharing]);`);
+        changed = true;
+      }
+      const stageStreamMarker = 'const stream = id === authUser?.id ? localStreamRef.current : voiceVideoStreams[id];';
+      if (output.includes(stageStreamMarker)) {
+        output = output.replace(stageStreamMarker, 'const stream = id === authUser?.id ? localStageVideoStream : voiceVideoStreams[id];');
+        changed = true;
+      }
+
       const stateMarker = '  const [voiceScreenSharing, setVoiceScreenSharing] = useState(false);';
       if (output.includes(stateMarker) && !output.includes('screenSharePickerOpen')) {
         output = output.replace(stateMarker, `${stateMarker}
@@ -272,7 +288,7 @@ function StageVideo({ stream, muted=false, name='O usuário' }) {
       }
 
       if (!changed) return null;
-      for (const marker of ['screenSharePickerOpen', 'chromeMediaSourceId', 'cc-screen-share-picker', 'validateVoiceScreenStream', 'cc-remote-video-paused']) {
+      for (const marker of ['screenSharePickerOpen', 'chromeMediaSourceId', 'cc-screen-share-picker', 'validateVoiceScreenStream', 'cc-remote-video-paused', 'localStageVideoStream']) {
         if (!output.includes(marker)) throw new Error(`ChronoCord screen-share marker missing: ${marker}`);
       }
       return { code: output, map: null };
