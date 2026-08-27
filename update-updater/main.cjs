@@ -11,6 +11,7 @@ const RELEASE_REPO = 'matheuz232/chronocord';
 const args = Object.fromEntries(process.argv.slice(1).filter(x=>x.startsWith('--')).map(x=>{const [k,...v]=x.slice(2).split('=');return [k,v.join('=')||true]}));
 const currentVersion = String(args.current || '0.0.0');
 const appPid = Number(args.pid || 0);
+const appExe = String(args['app-exe'] || '');
 let win;
 
 function requestGithubLatestRelease(repo){
@@ -36,6 +37,7 @@ function requestJson(url){return new Promise((resolve,reject)=>{const u=new URL(
 function download(url,dest,onProgress){return new Promise((resolve,reject)=>{const u=new URL(url);const file=fs.createWriteStream(dest);const req=https.get(u,{headers:{'User-Agent':'ChronoCord-Updater/1.0'}},res=>{if(res.statusCode>=300&&res.statusCode<400&&res.headers.location){file.close();fs.rmSync(dest,{force:true});return download(new URL(res.headers.location,u).href,dest,onProgress).then(resolve,reject)}if(res.statusCode!==200){file.close();fs.rmSync(dest,{force:true});return reject(new Error(`Download HTTP ${res.statusCode}`))}const total=Number(res.headers['content-length']||0);let done=0;res.on('data',chunk=>{done+=chunk.length;onProgress?.(total?Math.round(done/total*100):0)});res.pipe(file);file.on('finish',()=>file.close(resolve));});req.setTimeout(120000,()=>req.destroy(new Error('Download expirou.')));req.on('error',e=>{file.close();fs.rmSync(dest,{force:true});reject(e)})})}
 function sha256(file){return new Promise((resolve,reject)=>{const h=crypto.createHash('sha256');const s=fs.createReadStream(file);s.on('data',d=>h.update(d));s.on('end',()=>resolve(h.digest('hex')));s.on('error',reject)})}
 function waitPid(pid){return new Promise(resolve=>{if(!pid||pid===process.pid)return resolve();const started=Date.now();const check=()=>{try{process.kill(pid,0);if(Date.now()-started>20000)return resolve();setTimeout(check,250)}catch{resolve()}};check()})}
+function runProcess(file,args){return new Promise((resolve,reject)=>{const child=spawn(file,args,{detached:false,stdio:'ignore',windowsHide:true});child.once('error',reject);child.once('close',code=>code===0?resolve():reject(new Error(`Instalador encerrou com código ${code}.`)))})}
 async function createWindow(){win=new BrowserWindow({width:400,height:250,minWidth:400,minHeight:250,maxWidth:400,maxHeight:250,resizable:false,frame:false,transparent:true,backgroundColor:'#00000000',show:false,skipTaskbar:true,hasShadow:true,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,preload:path.join(__dirname,'preload.cjs')}});await win.loadFile(path.join(__dirname,'ui.html'))}
 function send(type,data){if(win&&!win.isDestroyed())win.webContents.send('updater:event',{type,...data})}
 async function performUpdate(manifest){
@@ -48,9 +50,14 @@ async function performUpdate(manifest){
   if (appPid && process.platform === 'win32') { await new Promise((resolve)=>execFile('taskkill',['/PID',String(appPid),'/T'],{windowsHide:true},()=>resolve())); }
   await waitPid(appPid);
   send('state',{step:'install',progress:100,text:'Instalando atualização…'});
-  const child=spawn(dest,['--updated'],{detached:true,stdio:'ignore',windowsHide:true}); child.unref();
+  const installArgs=['/S'];
+  if(appExe) installArgs.push(`/D=${path.dirname(appExe)}`);
+  await runProcess(dest,installArgs);
+  fs.rmSync(dest,{force:true});
+  if(!appExe||!fs.existsSync(appExe)) throw new Error('O ChronoCord atualizado não foi encontrado para reiniciar.');
   send('state',{step:'done',progress:100,text:'Abrindo o ChronoCord…'});
-  setTimeout(()=>app.quit(),1200);
+  const child=spawn(appExe,[],{detached:true,stdio:'ignore',windowsHide:false}); child.unref();
+  setTimeout(()=>app.quit(),900);
 }
 ipcMain.handle('update-now',async()=>{try{const m=await resolveLatest();await performUpdate(m);return {ok:true}}catch(e){send('error',{text:e.message||'Não foi possível atualizar.'});return {ok:false,error:e.message}}});
 ipcMain.handle('later',()=>{app.quit();return true});
