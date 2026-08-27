@@ -10,9 +10,10 @@
     "desktop": "npm run build && electron .",
     "dist": "npm run build && npm run build:updater && electron-builder --publish never && npm run build:installer",
     "android:sync": "npm run build && npx cap sync android",
+    "test:settings": "node --test tests/settings-*.test.mjs",
     "check:server": "node --check server/server.js",
     "check:electron": "node --check electron/bootstrap.cjs && node --check electron/main.cjs && node --check electron/preload.cjs",
-    "check": "node preflight.mjs && node build-preflight.mjs && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check scripts-installer-bootstrapper.mjs && node --check update-updater/main.cjs && node --check installer-bootstrapper/main.cjs && node --check installer-bootstrapper/preload.cjs",
+    "check": "node preflight.mjs && node build-preflight.mjs && npm run test:settings && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check scripts-installer-bootstrapper.mjs && node --check update-updater/main.cjs && node --check installer-bootstrapper/main.cjs && node --check installer-bootstrapper/preload.cjs",
     "build:updater": "node scripts-build.mjs",
     "build:installer": "node scripts-installer-bootstrapper.mjs",
     "diagnose": "node diagnose-build.mjs"
