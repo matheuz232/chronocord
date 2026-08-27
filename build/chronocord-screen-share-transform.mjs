@@ -14,7 +14,13 @@ export function chronocordScreenShare() {
   const [screenSharePickerOpen, setScreenSharePickerOpen] = useState(false);
   const [screenShareSources, setScreenShareSources] = useState([]);
   const [screenSharePickerBusy, setScreenSharePickerBusy] = useState(false);
-  const [screenSharePickerError, setScreenSharePickerError] = useState('');`);
+  const [screenSharePickerError, setScreenSharePickerError] = useState('');
+  useEffect(() => {
+    if(!screenSharePickerOpen)return;
+    const onKeyDown=(event)=>{ if(event.key==='Escape' && !screenSharePickerBusy){ setScreenSharePickerOpen(false); setScreenShareSources([]); setScreenSharePickerError(''); } };
+    window.addEventListener('keydown',onKeyDown);
+    return()=>window.removeEventListener('keydown',onKeyDown);
+  },[screenSharePickerOpen,screenSharePickerBusy]);`);
         changed = true;
       }
 
@@ -42,7 +48,14 @@ export function chronocordScreenShare() {
   }
 `;
 
-      const newScreenBlock = `  async function validateVoiceScreenStream(stream){
+      const newScreenBlock = `  function closeScreenSharePicker(){
+    if(screenSharePickerBusy)return;
+    setScreenSharePickerOpen(false);
+    setScreenShareSources([]);
+    setScreenSharePickerError('');
+  }
+
+  async function validateVoiceScreenStream(stream){
     const track=stream?.getVideoTracks?.()[0] || null;
     if(!track || track.readyState !== 'live') throw new Error('A fonte selecionada não iniciou uma transmissão de vídeo válida.');
     const probe=document.createElement('video');
@@ -72,6 +85,10 @@ export function chronocordScreenShare() {
     let track=null;
     try{
       track=await validateVoiceScreenStream(stream);
+      const previousTrack=localVideoTrackRef.current;
+      const previousKind=localVideoKindRef.current;
+      if(previousTrack && previousTrack!==track){ try{previousTrack.stop();}catch{} }
+      if(previousKind==='camera')setVoiceCameraOn(false);
       localVideoTrackRef.current=track;
       localVideoKindRef.current='screen';
       track.onended=()=>{
@@ -121,10 +138,6 @@ export function chronocordScreenShare() {
       setVoiceScreenSharing(false);
       return;
     }
-    if(voiceCameraOn){
-      await stopLocalVideo('camera');
-      setVoiceCameraOn(false);
-    }
     setScreenSharePickerError('');
     const getDesktopSources=globalThis.window?.electronAPI?.getDesktopSources;
     if(typeof getDesktopSources === 'function'){
@@ -156,11 +169,11 @@ export function chronocordScreenShare() {
       const modalMarker = '      {/* MODAL: WATCH2CHRONOS */}';
       if (output.includes(modalMarker) && !output.includes('cc-screen-share-picker')) {
         const picker = `      {screenSharePickerOpen && (
-        <div className="cc-screen-share-picker" role="dialog" aria-modal="true" aria-labelledby="cc-screen-share-title" style={{position:'fixed',inset:0,zIndex:82,background:'rgba(5,4,10,.72)',backdropFilter:'blur(12px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}} onMouseDown={(e)=>{if(e.target===e.currentTarget && !screenSharePickerBusy)setScreenSharePickerOpen(false);}}>
+        <div className="cc-screen-share-picker" role="dialog" aria-modal="true" aria-labelledby="cc-screen-share-title" style={{position:'fixed',inset:0,zIndex:82,background:'rgba(5,4,10,.72)',backdropFilter:'blur(12px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}} onMouseDown={(e)=>{if(e.target===e.currentTarget)closeScreenSharePicker();}}>
           <div style={{width:'min(920px,94vw)',maxHeight:'86vh',display:'flex',flexDirection:'column',overflow:'hidden',borderRadius:20,border:'1px solid '+T.border,background:T.bg2,boxShadow:'0 30px 90px rgba(0,0,0,.55)'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,padding:'18px 20px 14px',borderBottom:'1px solid '+T.border}}>
               <div><div id="cc-screen-share-title" style={{fontFamily:FONT_DISPLAY,fontSize:19,fontWeight:800}}>Escolha o que compartilhar</div><div style={{fontSize:12.5,color:T.textDim,marginTop:4}}>Selecione uma tela inteira ou uma janela. O ChronoCord só inicia a transmissão depois da sua escolha.</div></div>
-              <button type="button" aria-label="Fechar seletor de compartilhamento" disabled={screenSharePickerBusy} onClick={()=>setScreenSharePickerOpen(false)} style={{width:36,height:36,borderRadius:10,border:'1px solid '+T.border,background:T.bg1,color:T.textMain,cursor:screenSharePickerBusy?'wait':'pointer',fontSize:20,lineHeight:1}}>×</button>
+              <button type="button" aria-label="Fechar seletor de compartilhamento" disabled={screenSharePickerBusy} onClick={closeScreenSharePicker} style={{width:36,height:36,borderRadius:10,border:'1px solid '+T.border,background:T.bg1,color:T.textMain,cursor:screenSharePickerBusy?'wait':'pointer',fontSize:20,lineHeight:1}}>×</button>
             </div>
             <div style={{overflowY:'auto',padding:18}}>
               {screenSharePickerError && <div role="alert" style={{marginBottom:14,padding:'10px 12px',borderRadius:10,background:'rgba(226,87,76,.14)',border:'1px solid rgba(226,87,76,.35)',color:'#ffb2aa',fontSize:12.5}}>{screenSharePickerError}</div>}
@@ -171,7 +184,7 @@ export function chronocordScreenShare() {
                 </button>)}
               </div>
             </div>
-            <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:10,padding:'12px 18px 16px',borderTop:'1px solid '+T.border}}><span style={{fontSize:11.5,color:T.textFaint,marginRight:'auto'}}>{screenSharePickerBusy?'Iniciando transmissão…':'Nada será transmitido até você selecionar uma fonte.'}</span><button type="button" disabled={screenSharePickerBusy} onClick={()=>setScreenSharePickerOpen(false)} style={{padding:'9px 14px',borderRadius:9,border:'1px solid '+T.border,background:T.bg1,color:T.textMain,cursor:screenSharePickerBusy?'wait':'pointer'}}>Cancelar</button></div>
+            <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:10,padding:'12px 18px 16px',borderTop:'1px solid '+T.border}}><span style={{fontSize:11.5,color:T.textFaint,marginRight:'auto'}}>{screenSharePickerBusy?'Iniciando transmissão…':'Nada será transmitido até você selecionar uma fonte.'}</span><button type="button" disabled={screenSharePickerBusy} onClick={closeScreenSharePicker} style={{padding:'9px 14px',borderRadius:9,border:'1px solid '+T.border,background:T.bg1,color:T.textMain,cursor:screenSharePickerBusy?'wait':'pointer'}}>Cancelar</button></div>
           </div>
         </div>
       )}
