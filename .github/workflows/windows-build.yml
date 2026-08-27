@@ -30,11 +30,11 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
-        run: npm install --include=optional
-
       - name: Settings contract tests
         run: npm run test:settings
+
+      - name: Install dependencies
+        run: npm install --include=optional
 
       - name: Core syntax preflight
         shell: pwsh
