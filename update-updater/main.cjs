@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -95,25 +95,23 @@ async function createWindow(){win=new BrowserWindow({width:400,height:250,minWid
 function send(type,data){if(win&&!win.isDestroyed())win.webContents.send('updater:event',{type,...data})}
 async function performUpdate(manifest){
   const dest=path.join(app.getPath('temp'),`ChronoCord-Setup-${manifest.version}.exe`);
-  send('state',{step:'download',progress:0,text:'Baixando atualização…'});
-  await download(manifest.url,dest,p=>send('state',{step:'download',progress:p,text:'Baixando atualização…'}));
-  send('state',{step:'verify',progress:100,text:'Verificando atualização…'});
+  send('state',{step:'download',progress:2,text:'Baixando atualização…'});
+  await download(manifest.url,dest,p=>send('state',{step:'download',progress:Math.max(2,Math.min(70,Math.round(p*0.7))),text:'Baixando atualização…'}));
+  send('state',{step:'verify',progress:74,text:'Verificando atualização…'});
   const actual=await sha256(dest); if(actual.toLowerCase()!==String(manifest.sha256||'').toLowerCase()){fs.rmSync(dest,{force:true});throw new Error('A verificação de integridade falhou. O instalador foi descartado.')}
-  send('state',{step:'close',progress:100,text:'Preparando atualização…'});
+  send('state',{step:'update',progress:82,text:'Atualizando ChronoCord…'});
   if (appPid && process.platform === 'win32') { await new Promise((resolve)=>execFile('taskkill',['/PID',String(appPid),'/T'],{windowsHide:true},()=>resolve())); }
   await waitPid(appPid);
-  send('state',{step:'install',progress:100,text:'Instalando atualização…'});
   const installArgs=['/S'];
   if(appExe) installArgs.push(`/D=${path.dirname(appExe)}`);
   await runProcess(dest,installArgs);
+  send('state',{step:'finalize',progress:96,text:'Concluindo…'});
   fs.rmSync(dest,{force:true});
   if(!appExe||!fs.existsSync(appExe)) throw new Error('O ChronoCord atualizado não foi encontrado para reiniciar.');
   send('state',{step:'done',progress:100,text:'Abrindo o ChronoCord…'});
   const child=spawn(appExe,[],{detached:true,stdio:'ignore',windowsHide:false}); child.unref();
   setTimeout(()=>app.quit(),900);
 }
-ipcMain.handle('update-now',async()=>{try{const m=await resolveLatest();await performUpdate(m);return {ok:true}}catch(e){send('error',{text:e.message||'Não foi possível atualizar.'});return {ok:false,error:e.message}}});
-ipcMain.handle('later',()=>{app.quit();return true});
 app.whenReady().then(async()=>{
   await createWindow();
   try{
