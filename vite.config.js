@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { chronocordSettingsCenter } from './build/chronocord-settings-transform.mjs';
 import { chronocordProductFeatures } from './build/chronocord-product-transform.mjs';
+import { chronocordProfileSummary } from './build/chronocord-profile-transform.mjs';
 import { chronocordFeatureInteractions } from './build/chronocord-feature-transform.mjs';
 
 function chronocordWebRtcFix() {
@@ -65,7 +66,7 @@ function chronocordWebRtcFix() {
 }
 
 export default defineConfig({
-  plugins: [chronocordWebRtcFix(), chronocordSettingsCenter(), chronocordProductFeatures(), chronocordFeatureInteractions(), react()],
+  plugins: [chronocordWebRtcFix(), chronocordSettingsCenter(), chronocordProductFeatures(), chronocordProfileSummary(), chronocordFeatureInteractions(), react()],
   base: './',
   build: { target: 'es2020' },
 });
