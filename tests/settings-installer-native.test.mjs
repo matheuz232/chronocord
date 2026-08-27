@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const nativePath = resolve(root, 'installer-bootstrapper', 'Program.cs');
+const referencePath = resolve(root, 'installer-bootstrapper', 'ReferenceInstaller.cs');
 const installerSource = existsSync(nativePath) ? readFileSync(nativePath, 'utf8') : '';
+const referenceSource = existsSync(referencePath) ? readFileSync(referencePath, 'utf8') : '';
 const buildSource = readFileSync(resolve(root, 'scripts-installer-bootstrapper.mjs'), 'utf8');
 
 test('animated installer is native and carries a verified appended payload', () => {
@@ -24,6 +26,23 @@ test('native installer preserves animated UI and folder selection without Electr
   assert.match(installerSource, /System\.Windows\.Forms\.Timer|new Timer\(/);
   assert.match(installerSource, /ProgressBar|OnPaint|LinearGradientBrush/);
   assert.doesNotMatch(installerSource, /Electron|BrowserWindow|ipcMain|ipcRenderer/);
+});
+
+test('native installer restores the approved 920x560 split reference layout', () => {
+  assert.ok(referenceSource, 'approved native reference layout source is missing');
+  assert.match(buildSource, /ReferenceInstaller\.cs/);
+  assert.match(buildSource, /\/main:ChronoCordInstaller\.ReferenceEntryPoint/);
+  assert.match(referenceSource, /ClientSize\s*=\s*new Size\(920,\s*560\)/);
+  assert.match(referenceSource, /Seu espaço, seu ritmo/);
+  assert.match(referenceSource, /Entre no/);
+  assert.match(referenceSource, /ChronoCord\./);
+  assert.match(referenceSource, /Pronto para instalar/);
+  assert.match(referenceSource, /Local de instalação/);
+  assert.match(referenceSource, /Instalar ChronoCord/);
+  assert.match(referenceSource, /OrbitVisual/);
+  assert.match(referenceSource, /LinearGradientBrush/);
+  assert.match(referenceSource, /FolderBrowserDialog/);
+  assert.doesNotMatch(referenceSource, /Electron|BrowserWindow|WebView|Chromium/);
 });
 
 test('native installer supports smoke test and silent installation', () => {
