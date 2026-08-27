@@ -1,31 +1,62 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {spawnSync} from 'node:child_process';
-const root=process.cwd();
-const cfg=JSON.parse(fs.readFileSync(path.join(root,'release-config.json'),'utf8'));
+import { spawnSync } from 'node:child_process';
+
+const root = process.cwd();
+const cfg = JSON.parse(fs.readFileSync(path.join(root, 'release-config.json'), 'utf8'));
 const configured = cfg.githubOwner && cfg.githubOwner !== 'SEU_USUARIO_GITHUB' && cfg.githubRepo;
-const manifest = process.env.CHRONOCORD_UPDATE_MANIFEST_URL || (configured ? `https://raw.githubusercontent.com/${cfg.githubOwner}/${cfg.githubRepo}/main/${cfg.manifestPath || 'updates/latest.json'}` : 'https://example.invalid/chronocord/latest.json');
+const manifest = process.env.CHRONOCORD_UPDATE_MANIFEST_URL || (configured
+  ? `https://raw.githubusercontent.com/${cfg.githubOwner}/${cfg.githubRepo}/main/${cfg.manifestPath || 'updates/latest.json'}`
+  : 'https://example.invalid/chronocord/latest.json');
 const releaseRepoName = cfg.releaseRepo || cfg.githubRepo;
 const releaseRepo = configured ? `${cfg.githubOwner}/${releaseRepoName}` : 'matheuz232/chronocord';
-if (!configured) console.warn('Aviso: release-config.json ainda não está configurado. O instalador será gerado, mas o updater ficará inativo até a publicação do manifesto.');
-const updater=path.join(root,'update-updater','main.cjs');
-let s=fs.readFileSync(updater,'utf8').replace(/const MANIFEST_URL = '[^']*';/, `const MANIFEST_URL = '${manifest}';`)
-  .replace(/const RELEASE_REPO = '[^']*';/, `const RELEASE_REPO = '${releaseRepo}';`);
-fs.writeFileSync(updater,s);
-const brandingDir = path.join(root, 'update-updater', 'branding');
-fs.mkdirSync(brandingDir, { recursive: true });
-fs.copyFileSync(path.join(root, 'assets', 'chronocord-logo.svg'), path.join(brandingDir, 'chronocord-logo.svg'));
-fs.copyFileSync(path.join(root, 'assets', 'chronocord.ico'), path.join(brandingDir, 'chronocord.ico'));
-const updaterNodeModules = path.join(root, 'update-updater', 'node_modules');
-if (!fs.existsSync(updaterNodeModules)) {
-  console.log('Instalando dependências do updater…');
-  const install = spawnSync(process.platform==='win32'?'cmd.exe':'npm', process.platform==='win32'?['/c','npm','install','--prefix','update-updater','--include=optional']:['install','--prefix','update-updater','--include=optional'], {stdio:'inherit'});
-  if (install.status !== 0) process.exit(install.status || 1);
+
+if (!configured) {
+  console.warn('Aviso: release-config.json ainda não está configurado. O updater usará somente a configuração de fallback disponível.');
 }
-const r=spawnSync(process.platform==='win32'?'cmd.exe':'npm',process.platform==='win32'?['/c','npm','run','dist:win','--prefix','update-updater']:['run','dist:win','--prefix','update-updater'],{stdio:'inherit'});
-if(r.status!==0)process.exit(r.status||1);
-const exe=path.join(root,'update-updater','release','ChronoCordUpdater.exe');
-if(!fs.existsSync(exe)) throw new Error('ChronoCordUpdater.exe não foi gerado.');
-fs.mkdirSync(path.join(root,'build','updater'),{recursive:true});
-fs.copyFileSync(exe,path.join(root,'build','updater','ChronoCordUpdater.exe'));
-console.log('Updater copiado para build/updater.');
+if (process.platform !== 'win32') throw new Error('O helper nativo do updater deve ser compilado no Windows.');
+
+function csharpString(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+const sourcePath = path.join(root, 'update-updater', 'Program.cs');
+if (!fs.existsSync(sourcePath)) throw new Error('update-updater/Program.cs não existe.');
+let source = fs.readFileSync(sourcePath, 'utf8');
+source = source
+  .replaceAll('__MANIFEST_URL__', csharpString(manifest))
+  .replaceAll('__RELEASE_REPO__', csharpString(releaseRepo));
+
+const generatedDir = path.join(root, 'build', 'generated');
+const outputDir = path.join(root, 'build', 'updater');
+fs.mkdirSync(generatedDir, { recursive: true });
+fs.mkdirSync(outputDir, { recursive: true });
+const generatedSource = path.join(generatedDir, 'ChronoCordUpdater.generated.cs');
+const outputExe = path.join(outputDir, 'ChronoCordUpdater.exe');
+fs.writeFileSync(generatedSource, source);
+
+const windowsDir = process.env.WINDIR || 'C:\\Windows';
+const csc = path.join(windowsDir, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe');
+if (!fs.existsSync(csc)) throw new Error(`Compilador .NET Framework não encontrado: ${csc}`);
+
+const icon = path.join(root, 'assets', 'chronocord.ico');
+const args = [
+  '/nologo',
+  '/target:winexe',
+  '/optimize+',
+  '/platform:x64',
+  `/out:${outputExe}`,
+  `/win32icon:${icon}`,
+  '/reference:System.dll',
+  '/reference:System.Core.dll',
+  '/reference:System.Drawing.dll',
+  '/reference:System.Windows.Forms.dll',
+  '/reference:System.Web.Extensions.dll',
+  generatedSource,
+];
+const result = spawnSync(csc, args, { cwd: root, stdio: 'inherit' });
+if (result.status !== 0) process.exit(result.status || 1);
+if (!fs.existsSync(outputExe) || fs.statSync(outputExe).size < 16 * 1024) {
+  throw new Error('ChronoCordUpdater.exe não foi gerado corretamente.');
+}
+console.log(`Updater nativo gerado: ${path.relative(root, outputExe)} (${fs.statSync(outputExe).size} bytes).`);
