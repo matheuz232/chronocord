@@ -11,6 +11,10 @@ const updater=path.join(root,'update-updater','main.cjs');
 let s=fs.readFileSync(updater,'utf8').replace(/const MANIFEST_URL = '[^']*';/, `const MANIFEST_URL = '${manifest}';`)
   .replace(/const RELEASE_REPO = '[^']*';/, `const RELEASE_REPO = '${releaseRepo}';`);
 fs.writeFileSync(updater,s);
+const brandingDir = path.join(root, 'update-updater', 'branding');
+fs.mkdirSync(brandingDir, { recursive: true });
+fs.copyFileSync(path.join(root, 'assets', 'chronocord-logo.svg'), path.join(brandingDir, 'chronocord-logo.svg'));
+fs.copyFileSync(path.join(root, 'assets', 'chronocord.ico'), path.join(brandingDir, 'chronocord.ico'));
 const updaterNodeModules = path.join(root, 'update-updater', 'node_modules');
 if (!fs.existsSync(updaterNodeModules)) {
   console.log('Instalando dependências do updater…');
