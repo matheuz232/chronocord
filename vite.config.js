@@ -55,6 +55,8 @@ function chronocordProductFeatures() {
       let output = code;
       let changed = false;
       if (!output.includes("import ProfilePage from './ProfilePage.jsx';")) { output = "import ProfilePage from './ProfilePage.jsx';\n" + output; changed = true; }
+      const appVersionMarker = 'const APP_VERSION = "1.0.2";';
+      if (output.includes(appVersionMarker)) { output = output.replace(appVersionMarker, 'const APP_VERSION = "1.0.3";'); changed = true; }
       const profileStateMarker = 'const [profileModal, setProfileModal] = useState(null);';
       if (output.includes(profileStateMarker) && !output.includes('const [fullProfilePage, setFullProfilePage]')) { output = output.replace(profileStateMarker, `${profileStateMarker}\n  const [fullProfilePage, setFullProfilePage] = useState(null);`); changed = true; }
       const jukeboxQueueMarker = 'const [jukeboxMuted, setJukeboxMuted] = useState(false);';
@@ -84,6 +86,8 @@ function chronocordProductFeatures() {
       const watch2Marker = '      {/* MODAL: WATCH2CHRONOS */}\n      {watch2Open && (';
       if (output.includes(watch2Marker) && !output.includes('cc-jukebox-mini')) { const mini = `      {nowPlaying && !jukeboxOpen && !watch2Open && <div className="cc-jukebox-mini"><div className="cc-jukebox-mini-art">♫</div><div className="cc-jukebox-mini-copy"><strong>{nowPlaying.title}</strong><span>{isPlaying ? 'Tocando agora' : 'Pausado'}</span></div><button type="button" onClick={() => isPlaying ? (pauseJukeboxMedia(), setIsPlaying(false), emitJukeboxState({isPlaying:false})) : playJukeboxMedia()} className="cc-jukebox-mini-action">{isPlaying ? 'Ⅱ' : '▶'}</button><button type="button" onClick={() => setJukeboxOpen(true)} className="cc-jukebox-mini-action" title="Abrir Jukebox">♪</button></div>}\n\n`; output = output.replace(watch2Marker, mini + watch2Marker); changed = true; }
       if (!changed) return null;
+      const required = ['cc-jukebox-queue-toggle','cc-jukebox-art-card','cc-remote-video-paused','cc-profile-full-button'];
+      for (const marker of required) if (!output.includes(marker)) throw new Error(`ChronoCord 1.0.3 feature marker missing: ${marker}`);
       return { code: output, map: null };
     },
   };
