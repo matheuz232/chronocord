@@ -8,6 +8,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const updaterPkg = JSON.parse(readFileSync(resolve(root, 'update-updater', 'package.json'), 'utf8'));
 const releaseConfig = JSON.parse(readFileSync(resolve(root, 'release-config.json'), 'utf8'));
 const buildUpdaterSource = readFileSync(resolve(root, 'scripts-build.mjs'), 'utf8');
+const updaterMainSource = readFileSync(resolve(root, 'update-updater', 'main.cjs'), 'utf8');
 
 test('updater is packaged as a portable helper and never auto-publishes from CI', () => {
   assert.equal(updaterPkg.build?.win?.target, 'portable');
@@ -21,4 +22,12 @@ test('updater separates the manifest repository from the application release rep
   assert.equal(releaseConfig.githubRepo, 'chronocord-server');
   assert.equal(releaseConfig.releaseRepo, 'chronocord');
   assert.match(buildUpdaterSource, /cfg\.releaseRepo\s*\|\|\s*cfg\.githubRepo/);
+});
+
+test('updater stays invisible until a newer version is confirmed and then updates automatically', () => {
+  assert.doesNotMatch(updaterMainSource, /ready-to-show[^\n]*win\.show\(\)/);
+  assert.match(updaterMainSource, /await\s+win\.loadFile\(/);
+  assert.match(updaterMainSource, /cmp\(m\.version,currentVersion\)<=0\)\{app\.quit\(\);return\}/);
+  assert.match(updaterMainSource, /win\.show\(\);\s*await\s+performUpdate\(m\)/);
+  assert.doesNotMatch(updaterMainSource, /send\('available'/);
 });
