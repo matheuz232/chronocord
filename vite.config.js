@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { chronocordFeatureInteractions } from './build/chronocord-feature-transform.mjs';
 
 function chronocordWebRtcFix() {
   return {
@@ -81,15 +82,11 @@ function chronocordProductFeatures() {
       const profileOverlayMarker = '      {/* MODAL: PERFIL */}\n      {profileModal && (';
       if (output.includes(profileOverlayMarker) && !output.includes('{fullProfilePage && (')) { output = output.replace(profileOverlayMarker, `      {fullProfilePage && (\n        <ProfilePage profile={{ ...fullProfilePage, banner: fullProfilePage.isMe ? myBannerUrl : fullProfilePage.banner, imgSrc: fullProfilePage.isMe ? myAvatarUrl : fullProfilePage.imgSrc }} isMe={!!fullProfilePage.isMe} T={T} themeColor={themeColor} onClose={() => setFullProfilePage(null)} onEditProfile={() => { setFullProfilePage(null); setSettingsOpen(true); setSettingsTab('perfil'); }} />\n      )}\n\n${profileOverlayMarker}`); changed = true; }
       const watch2Marker = '      {/* MODAL: WATCH2CHRONOS */}\n      {watch2Open && (';
-      if (output.includes(watch2Marker) && !output.includes('cc-jukebox-mini')) {
-        const mini = `      {nowPlaying && !jukeboxOpen && !watch2Open && <div className="cc-jukebox-mini"><div className="cc-jukebox-mini-art">♫</div><div className="cc-jukebox-mini-copy"><strong>{nowPlaying.title}</strong><span>{isPlaying ? 'Tocando agora' : 'Pausado'}</span></div><button type="button" onClick={() => isPlaying ? (pauseJukeboxMedia(), setIsPlaying(false), emitJukeboxState({isPlaying:false})) : playJukeboxMedia()} className="cc-jukebox-mini-action">{isPlaying ? 'Ⅱ' : '▶'}</button><button type="button" onClick={() => setJukeboxOpen(true)} className="cc-jukebox-mini-action" title="Abrir Jukebox">♪</button></div>}\n\n`;
-        output = output.replace(watch2Marker, mini + watch2Marker);
-        changed = true;
-      }
+      if (output.includes(watch2Marker) && !output.includes('cc-jukebox-mini')) { const mini = `      {nowPlaying && !jukeboxOpen && !watch2Open && <div className="cc-jukebox-mini"><div className="cc-jukebox-mini-art">♫</div><div className="cc-jukebox-mini-copy"><strong>{nowPlaying.title}</strong><span>{isPlaying ? 'Tocando agora' : 'Pausado'}</span></div><button type="button" onClick={() => isPlaying ? (pauseJukeboxMedia(), setIsPlaying(false), emitJukeboxState({isPlaying:false})) : playJukeboxMedia()} className="cc-jukebox-mini-action">{isPlaying ? 'Ⅱ' : '▶'}</button><button type="button" onClick={() => setJukeboxOpen(true)} className="cc-jukebox-mini-action" title="Abrir Jukebox">♪</button></div>}\n\n`; output = output.replace(watch2Marker, mini + watch2Marker); changed = true; }
       if (!changed) return null;
       return { code: output, map: null };
     },
   };
 }
 
-export default defineConfig({ plugins: [react(), chronocordWebRtcFix(), chronocordProductFeatures()], base: './', build: { target: 'es2020' } });
+export default defineConfig({ plugins: [react(), chronocordWebRtcFix(), chronocordProductFeatures(), chronocordFeatureInteractions()], base: './', build: { target: 'es2020' } });
