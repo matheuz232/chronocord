@@ -6,6 +6,10 @@ function replaceRequired(code, marker, replacement, label) {
 export function applyChronoCordMediaFeatures(input) {
   let output = input.replace(/\r\n/g, '\n');
 
+  // Rewrite existing UI entry points before adding openWatch2Chronos itself,
+  // otherwise a global replacement would turn the helper into recursion.
+  output = output.replaceAll('setWatch2Open(true)', 'openWatch2Chronos()');
+
   const legacyQueueState = "  const [showJukeboxQueue, setShowJukeboxQueue] = useState(() => { try { return localStorage.getItem('chronocord.jukebox.queueVisible') !== 'false'; } catch { return true; } });";
   const mediaState = `  const [showJukeboxQueue, setShowJukeboxQueue] = useState(() => {
     try { return localStorage.getItem("chronocord:jukebox:showQueue") !== "0"; } catch { return true; }
@@ -83,7 +87,6 @@ export function applyChronoCordMediaFeatures(input) {
   output = replaceRequired(output, progressGuard, '    if (!locallyPlaying || !nowPlaying || !socketRef.current || !activeEra || !voiceState.channelId) return;', 'Jukebox progress guard');
   output = replaceRequired(output, '  }, [isPlaying, nowPlaying, activeEra, voiceState.channelId]);', '  }, [locallyPlaying, nowPlaying, activeEra, voiceState.channelId]);', 'Jukebox progress dependencies');
 
-  output = output.replaceAll('setWatch2Open(true)', 'openWatch2Chronos()');
   output = replaceRequired(output, '<Modal onClose={() => setWatch2Open(false)} width={520} bg={T.bg2} border={T.border}>', '<Modal onClose={closeWatch2Chronos} width={520} bg={T.bg2} border={T.border}>', 'Watch2 close control');
 
   output = replaceRequired(output, '<div className="cc-media-panel cc-jukebox-panel">', '<div className="cc-media-panel cc-jukebox-panel cc-jukebox-premium">', 'Jukebox premium shell');
