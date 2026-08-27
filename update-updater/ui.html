@@ -13,7 +13,7 @@
     .surface{width:100%;height:100%;border-radius:21px;background:radial-gradient(circle at 15% 0%,rgba(133,78,255,.18),transparent 42%),linear-gradient(160deg,#17132a,#0d0b15);overflow:hidden;display:flex;flex-direction:column}
     .titlebar{height:42px;display:flex;align-items:center;padding:0 14px;border-bottom:1px solid rgba(255,255,255,.07);-webkit-app-region:drag}
     .brand{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:800;letter-spacing:.1px}
-    .brand-mark{width:21px;height:21px;border-radius:7px;background:linear-gradient(135deg,#c05cff,#6d39ff);box-shadow:0 0 18px rgba(177,86,255,.45);display:grid;place-items:center;font-size:11px}
+    .brand-logo{width:23px;height:23px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(170,91,255,.5))}
     .content{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:22px 26px 24px;text-align:center}
     .orb{width:62px;height:62px;border-radius:20px;margin-bottom:14px;background:radial-gradient(circle at 32% 28%,#d3a6ff 0 6%,transparent 7%),linear-gradient(135deg,#9d49ff,#5e2fe4);box-shadow:0 0 28px rgba(157,73,255,.33);display:grid;place-items:center;animation:pulse 2.4s ease-in-out infinite}
     .orb::after{content:"";width:25px;height:25px;border-radius:50%;border:3px solid rgba(255,255,255,.45);transform:rotate(-18deg) scaleX(1.2)}
@@ -29,7 +29,7 @@
   <div class="window">
     <div class="surface">
       <div class="titlebar">
-        <div class="brand"><div class="brand-mark">◉</div><span>ChronoCord</span></div>
+        <div class="brand"><img class="brand-logo" src="branding/chronocord-logo.svg" alt=""><span>ChronoCord</span></div>
       </div>
       <main class="content">
         <div class="orb" aria-hidden="true"></div>
