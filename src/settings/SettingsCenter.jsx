@@ -28,7 +28,7 @@ function routeTitle(route) {
   return ({ language:'Idioma e Horário', registeredGames:'Jogos registrados', activityPrivacy:'Privacidade nas atividades', gameOverlay:'Sobreposição de jogo', connectedApps:'Apps conectados', developer:'Desenvolvedor' })[route] || 'Configurações';
 }
 
-export default function SettingsCenter({ user, profile, T, themeColor, accountApi, onClose, onLogout, legacy = {} }) {
+export default function SettingsCenter({ user, profile, T, themeColor, onClose, onLogout, legacy = {} }) {
   const userId = String(user?.id || user?.username || 'guest');
   const initial = useMemo(() => loadSettings(userId), [userId]);
   const legacyRoute = LEGACY_ROUTE_MAP[legacy?.settingsTab];
@@ -60,7 +60,7 @@ export default function SettingsCenter({ user, profile, T, themeColor, accountAp
   }, [route]);
 
   const legacyWithNavigation = useMemo(() => ({ ...legacy, openProfileEditor: () => navigate('profile.edit') }), [legacy, navigate]);
-  const page = renderPage(route, { settings, patch, resetSubtree, user, profile, T, themeColor, navigate, accountApi, legacy:legacyWithNavigation });
+  const page = renderPage(route, { settings, patch, resetSubtree, user, profile, T, themeColor, navigate, legacy:legacyWithNavigation });
 
   const cssVars = {
     '--cc-bg-0': T?.bg0 || '#0E0C18', '--cc-bg-1': T?.bg1 || '#151228', '--cc-bg-2': T?.bg2 || '#1B1832', '--cc-bg-3': T?.bg3 || '#211D3D', '--cc-bg-4': T?.bg4 || '#262146',
