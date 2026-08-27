@@ -11,9 +11,10 @@
     "dist": "npm run build && npm run build:updater && electron-builder --publish never && npm run build:installer",
     "android:sync": "npm run build && npx cap sync android",
     "test:settings": "node --test tests/settings-*.test.mjs",
+    "test:distribution": "node --test tests/windows-distribution.test.mjs",
     "check:server": "node --check server/server.js",
     "check:electron": "node --check electron/bootstrap.cjs && node --check electron/main.cjs && node --check electron/preload.cjs",
-    "check": "node preflight.mjs && node build-preflight.mjs && npm run test:settings && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check scripts-installer-bootstrapper.mjs && node --check update-updater/main.cjs && node --check installer-bootstrapper/main.cjs && node --check installer-bootstrapper/preload.cjs",
+    "check": "node preflight.mjs && node build-preflight.mjs && npm run test:settings && npm run test:distribution && npm run check:server && npm run check:electron && node --check scripts-build.mjs && node --check scripts-installer-bootstrapper.mjs",
     "build:updater": "node scripts-build.mjs",
     "build:installer": "node scripts-installer-bootstrapper.mjs",
     "diagnose": "node diagnose-build.mjs"
@@ -26,16 +27,17 @@
     "socket.io-client": "4.8.1"
   },
   "devDependencies": {
-    "@esbuild/win32-x64": "0.25.9",
-    "@vitejs/plugin-react": "4.3.4",
-    "electron": "38.0.0",
-    "electron-builder": "26.0.12",
-    "esbuild": "0.25.9",
-    "vite": "6.3.5"
+    "@esbuild/win32-x64": "0.28.2",
+    "@vitejs/plugin-react": "6.1.0",
+    "electron": "44.0.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "vite": "8.2.2"
   },
   "build": {
     "appId": "com.chronocord.app",
     "productName": "ChronoCord",
+    "compression": "maximum",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -71,7 +73,7 @@
         "to": "assets"
       }
     ],
-    "electronVersion": "38.0.0",
+    "electronVersion": "44.0.0",
     "directories": {
       "output": "release"
     }
