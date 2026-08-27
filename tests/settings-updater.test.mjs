@@ -1,38 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const updaterPkg = JSON.parse(readFileSync(resolve(root, 'update-updater', 'package.json'), 'utf8'));
 const releaseConfig = JSON.parse(readFileSync(resolve(root, 'release-config.json'), 'utf8'));
 const buildUpdaterSource = readFileSync(resolve(root, 'scripts-build.mjs'), 'utf8');
-const updaterMainSource = readFileSync(resolve(root, 'update-updater', 'main.cjs'), 'utf8');
-const updaterPreloadSource = readFileSync(resolve(root, 'update-updater', 'preload.cjs'), 'utf8');
-const updaterUiSource = readFileSync(resolve(root, 'update-updater', 'ui.html'), 'utf8');
 const electronMainSource = readFileSync(resolve(root, 'electron', 'main.cjs'), 'utf8');
+const nativePath = resolve(root, 'update-updater', 'Program.cs');
+const updaterSource = existsSync(nativePath) ? readFileSync(nativePath, 'utf8') : '';
 
-test('updater is packaged as a portable helper and never auto-publishes from CI', () => {
-  assert.equal(updaterPkg.build?.win?.target, 'portable');
-  assert.match(updaterPkg.scripts?.['dist:win'] || '', /--win\s+portable\b/);
-  assert.match(updaterPkg.scripts?.['dist:win'] || '', /--publish\s+never\b/);
-  assert.doesNotMatch(updaterPkg.scripts?.['dist:win'] || '', /--win\s+nsis\b/);
+test('updater is a native Windows helper instead of a second Electron runtime', () => {
+  assert.ok(updaterSource, 'native updater source update-updater/Program.cs is missing');
+  assert.match(buildUpdaterSource, /Framework64/);
+  assert.match(buildUpdaterSource, /csc\.exe/);
+  assert.match(buildUpdaterSource, /ChronoCordUpdater\.exe/);
+  assert.doesNotMatch(buildUpdaterSource, /npm[^\n]+--prefix[^\n]+update-updater/);
+  assert.doesNotMatch(buildUpdaterSource, /electron-builder[^\n]+update-updater/);
+  assert.doesNotMatch(updaterSource, /Electron|BrowserWindow|ipcMain|ipcRenderer/);
 });
 
-test('updater separates the manifest repository from the application release repository', () => {
+test('updater keeps manifest and release repository configuration separated', () => {
   assert.equal(releaseConfig.githubOwner, 'matheuz232');
   assert.equal(releaseConfig.githubRepo, 'chronocord-server');
   assert.equal(releaseConfig.releaseRepo, 'chronocord');
   assert.match(buildUpdaterSource, /cfg\.releaseRepo\s*\|\|\s*cfg\.githubRepo/);
-});
-
-test('updater stays invisible until a newer version is confirmed and then updates automatically', () => {
-  assert.doesNotMatch(updaterMainSource, /ready-to-show[^\n]*win\.show\(\)/);
-  assert.match(updaterMainSource, /await\s+win\.loadFile\(/);
-  assert.match(updaterMainSource, /cmp\(m\.version,currentVersion\)<=0\)\{app\.quit\(\);return\}/);
-  assert.match(updaterMainSource, /win\.show\(\);\s*await\s+performUpdate\(m\)/);
-  assert.doesNotMatch(updaterMainSource, /send\('available'/);
+  assert.match(updaterSource, /__MANIFEST_URL__/);
+  assert.match(updaterSource, /__RELEASE_REPO__/);
 });
 
 test('desktop launches the updater from a temporary copy and supplies the installed app path', () => {
@@ -42,50 +37,30 @@ test('desktop launches the updater from a temporary copy and supplies the instal
   assert.match(electronMainSource, /`--app-exe=\$\{process\.execPath\}`/);
 });
 
-test('updater waits for a silent NSIS install and relaunches the installed ChronoCord executable', () => {
-  assert.match(updaterMainSource, /const\s+appExe\s*=\s*String\(args\['app-exe'\]\s*\|\|\s*''\)/);
-  assert.match(updaterMainSource, /const\s+installArgs\s*=\s*\['\/S'\]/);
-  assert.match(updaterMainSource, /installArgs\.push\(`\/D=\$\{path\.dirname\(appExe\)\}`\)/);
-  assert.match(updaterMainSource, /await\s+runProcess\(dest,\s*installArgs\)/);
-  assert.match(updaterMainSource, /spawn\(appExe,\s*\[\],\s*\{\s*detached:\s*true,\s*stdio:\s*'ignore',\s*windowsHide:\s*false\s*\}\)/);
-  assert.doesNotMatch(updaterMainSource, /spawn\(dest,\s*\['--updated'\]/);
+test('native updater only follows bounded HTTPS redirects', () => {
+  assert.match(updaterSource, /const\s+int\s+MaxRedirects\s*=\s*5/);
+  assert.match(updaterSource, /Uri\.UriSchemeHttps/);
+  assert.match(updaterSource, /AllowAutoRedirect\s*=\s*false/);
+  assert.match(updaterSource, /redirects\s*>\s*MaxRedirects/);
 });
 
-test('checksum downloads follow bounded HTTPS redirects before validation', () => {
-  assert.match(updaterMainSource, /function\s+requestText\(url,\s*redirects\s*=\s*0\)/);
-  assert.match(updaterMainSource, /if\s*\(u\.protocol\s*!==\s*'https:'\)/);
-  assert.match(updaterMainSource, /if\s*\(redirects\s*>\s*5\)/);
-  assert.match(updaterMainSource, /requestText\(new URL\(res\.headers\.location,\s*u\)\.href,\s*redirects\s*\+\s*1\)/);
-  assert.match(updaterMainSource, /const\s+checksumText\s*=\s*await\s+requestText\(sha\.browser_download_url\)/);
+test('native updater verifies SHA-256 before running the downloaded installer', () => {
+  assert.match(updaterSource, /SHA256\.Create\(\)/);
+  assert.match(updaterSource, /ChronoCord-Installer-/);
+  assert.match(updaterSource, /\.sha256/);
+  assert.match(updaterSource, /--silent/);
+  assert.match(updaterSource, /--dir=/);
+  assert.match(updaterSource, /checksum/i);
 });
 
-test('updater aborts instead of installing if the previous ChronoCord process does not exit in time', () => {
-  assert.match(updaterMainSource, /function\s+waitPid\(pid\)\{return new Promise\(\(resolve,reject\)=>/);
-  assert.match(updaterMainSource, /reject\(new Error\('O ChronoCord não encerrou a tempo para atualizar\.'\)\)/);
-  assert.doesNotMatch(updaterMainSource, /Date\.now\(\)-started>20000\)return resolve\(\)/);
+test('native updater bounds the old-process wait and relaunches installed ChronoCord', () => {
+  assert.match(updaterSource, /ExitWaitMilliseconds\s*=\s*20000/);
+  assert.match(updaterSource, /WaitForExit\(ExitWaitMilliseconds\)/);
+  assert.match(updaterSource, /Process\.Start/);
+  assert.match(updaterSource, /appExe/);
 });
 
-test('installer binary download only follows bounded HTTPS redirects', () => {
-  assert.match(updaterMainSource, /function\s+download\(url,dest,onProgress,redirects=0\)/);
-  assert.match(updaterMainSource, /if\(redirects>5\)return Promise\.reject\(new Error\('Muitos redirecionamentos ao baixar a atualização\.'\)\)/);
-  assert.match(updaterMainSource, /if\(u\.protocol!=='https:'\)return Promise\.reject\(new Error\('A atualização deve usar HTTPS\.'\)\)/);
-  assert.match(updaterMainSource, /download\(new URL\(res\.headers\.location,u\)\.href,dest,onProgress,redirects\+1\)/);
-});
-
-test('visible updater uses only the approved simple states and accessible progress semantics', () => {
-  for (const state of ['Verificando atualização…', 'Baixando atualização…', 'Atualizando ChronoCord…', 'Concluindo…', 'Abrindo o ChronoCord…']) {
-    assert.ok(updaterMainSource.includes(state) || updaterUiSource.includes(state), `missing state: ${state}`);
-  }
-  assert.doesNotMatch(updaterMainSource + updaterUiSource, /Preparando atualização|Instalando atualização/);
-  assert.match(updaterUiSource, /aria-live="polite"/);
-  assert.match(updaterUiSource, /role="progressbar"/);
-  assert.match(updaterUiSource, /aria-valuemin="0"/);
-  assert.match(updaterUiSource, /aria-valuemax="100"/);
-  assert.match(updaterUiSource, /prefers-reduced-motion:\s*reduce/);
-});
-
-test('automatic updater preload exposes no unused update or later commands', () => {
-  assert.doesNotMatch(updaterPreloadSource, /ipcRenderer\.invoke\('update-now'\)|ipcRenderer\.invoke\('later'\)/);
-  assert.doesNotMatch(updaterMainSource, /ipcMain\.handle\('update-now'\)|ipcMain\.handle\('later'\)/);
-  assert.match(updaterPreloadSource, /onEvent/);
+test('native updater has an offline smoke-test path', () => {
+  assert.match(updaterSource, /--smoke-test/);
+  assert.match(updaterSource, /SmokeTest/);
 });
