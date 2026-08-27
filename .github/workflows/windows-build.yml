@@ -19,7 +19,7 @@ jobs:
   windows-build:
     name: Build Windows installer
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
@@ -72,6 +72,29 @@ jobs:
           if ($installer.Length -lt 1MB) { throw "Animated installer unexpectedly small: $($installer.Length) bytes" }
           Write-Host "Setup: $($setup.Name) — $($setup.Length) bytes"
           Write-Host "Installer: $($installer.Name) — $($installer.Length) bytes"
+
+      - name: Smoke-test NSIS payload
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $setup = (Resolve-Path "release/ChronoCord-Setup-$version.exe").Path
+          $target = Join-Path $env:RUNNER_TEMP 'ChronoCord-Smoke'
+          New-Item -ItemType Directory -Force -Path $target | Out-Null
+          $proc = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$target") -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "NSIS smoke install failed with exit code $($proc.ExitCode)" }
+          $installed = Join-Path $target 'ChronoCord.exe'
+          if (-not (Test-Path $installed)) { throw "Installed executable not found at $installed" }
+          if ((Get-Item $installed).Length -lt 1MB) { throw 'Installed ChronoCord.exe is unexpectedly small.' }
+          Write-Host "NSIS smoke install OK: $installed"
+
+      - name: Smoke-test animated bootstrapper
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $installer = (Resolve-Path "release/ChronoCord-Installer-$version.exe").Path
+          $proc = Start-Process -FilePath $installer -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Animated installer smoke-test failed with exit code $($proc.ExitCode)" }
+          Write-Host 'Animated installer smoke-test OK.'
 
       - name: Generate SHA-256
         shell: pwsh
