@@ -1,6 +1,6 @@
 # ChronoCord 1.0.3
 
-A 1.0.3 consolida a experiência de mídia, perfis, transmissão e atualização do ChronoCord no Windows.
+A 1.0.3 consolida a experiência de mídia, perfis, transmissão, configurações, instalação e atualização do ChronoCord no Windows.
 
 ## Destaques
 
@@ -11,19 +11,28 @@ A 1.0.3 consolida a experiência de mídia, perfis, transmissão e atualização
 - Perfil completo com mural, atividade, lista de desejos e widgets de jogos.
 - Acesso ao perfil completo a partir do cartão resumido e interações por botão direito.
 - Destaque visual de participantes durante a fala.
+- Configurações com rolagem independente e scrollbar visível nas colunas de navegação e conteúdo.
 - Identidade visual unificada com a logo transparente oficial no app, updater e instalador.
-- Updater compacto com verificação SHA-256 antes da instalação.
-- Novo instalador animado 50/50 para Windows, com escolha de pasta e instalação silenciosa do payload validado.
+- Updater nativo compacto com verificação SHA-256 antes da instalação.
+- Instalador único e animado para Windows, com escolha de pasta, progresso visual e instalação silenciosa do payload validado.
+- Empacotamento otimizado sem runtimes Electron duplicados no updater ou no instalador.
 
 ## Arquivos para Windows
 
-- **ChronoCord-Installer-1.0.3.exe** — recomendado para novas instalações; inclui a experiência de instalação animada.
-- **ChronoCord-Setup-1.0.3.exe** — payload NSIS usado pelo updater e disponível para instalação direta.
-- Os respectivos arquivos `.sha256` permitem validar a integridade dos executáveis.
+- **ChronoCord-Installer-1.0.3.exe** — único instalador oficial para novas instalações e atualizações.
+- **ChronoCord-Installer-1.0.3.exe.sha256** — checksum SHA-256 para validação de integridade.
+
+O `ChronoCord-Setup-1.0.3.exe` existe apenas como payload intermediário durante o build, é incorporado ao instalador final e removido antes da publicação. Ele não é distribuído como segundo instalador.
 
 ## Atualização
 
-O updater procura a release mais recente do repositório oficial, baixa `ChronoCord-Setup-*.exe`, confere o SHA-256 publicado e só então inicia a atualização.
+O updater procura a versão mais recente no canal configurado, baixa o mesmo **ChronoCord-Installer-<versão>.exe** publicado para o usuário, valida o SHA-256 e só então inicia a atualização silenciosa e relança o aplicativo.
+
+## Segurança e tamanho
+
+- `npm audit --audit-level=low` faz parte do CI e a 1.0.3 é publicada com **0 vulnerabilidades conhecidas pelo npm audit**.
+- O CI exige exatamente um instalador primário e bloqueia builds acima de 285 MB.
+- O instalador final validado fica em aproximadamente 112 MB.
 
 ## Compatibilidade
 
