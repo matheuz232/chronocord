@@ -5,7 +5,8 @@ const root=process.cwd();
 const cfg=JSON.parse(fs.readFileSync(path.join(root,'release-config.json'),'utf8'));
 const configured = cfg.githubOwner && cfg.githubOwner !== 'SEU_USUARIO_GITHUB' && cfg.githubRepo;
 const manifest = process.env.CHRONOCORD_UPDATE_MANIFEST_URL || (configured ? `https://raw.githubusercontent.com/${cfg.githubOwner}/${cfg.githubRepo}/main/${cfg.manifestPath || 'updates/latest.json'}` : 'https://example.invalid/chronocord/latest.json');
-const releaseRepo = configured ? `${cfg.githubOwner}/${cfg.githubRepo}` : 'matheuz232/chronocord-server';
+const releaseRepoName = cfg.releaseRepo || cfg.githubRepo;
+const releaseRepo = configured ? `${cfg.githubOwner}/${releaseRepoName}` : 'matheuz232/chronocord';
 if (!configured) console.warn('Aviso: release-config.json ainda não está configurado. O instalador será gerado, mas o updater ficará inativo até a publicação do manifesto.');
 const updater=path.join(root,'update-updater','main.cjs');
 let s=fs.readFileSync(updater,'utf8').replace(/const MANIFEST_URL = '[^']*';/, `const MANIFEST_URL = '${manifest}';`)
