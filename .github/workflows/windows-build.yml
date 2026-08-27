@@ -34,8 +34,50 @@ jobs:
         with:
           node-version: 22
 
-      - name: Settings contract tests
-        run: npm run test:settings
+      - name: Settings — account API
+        run: node --test tests/settings-account-api.test.mjs
+
+      - name: Settings — account local-only
+        run: node --test tests/settings-account-local-only.test.mjs
+
+      - name: Settings — catalog
+        run: node --test tests/settings-catalog.test.mjs
+
+      - name: Settings — media priority
+        run: node --test tests/settings-media-priority.test.mjs
+
+      - name: Settings — packaging
+        run: node --test tests/settings-packaging.test.mjs
+
+      - name: Settings — product transform
+        run: node --test tests/settings-product-transform.test.mjs
+
+      - name: Settings — profile page
+        run: node --test tests/settings-profile-page.test.mjs
+
+      - name: Settings — profile summary
+        run: node --test tests/settings-profile-summary.test.mjs
+
+      - name: Settings — profile transform
+        run: node --test tests/settings-profile-transform.test.mjs
+
+      - name: Settings — screen share
+        run: node --test tests/settings-screen-share.test.mjs
+
+      - name: Settings — server/local contract
+        run: node --test tests/settings-server-backed.test.mjs
+
+      - name: Settings — storage
+        run: node --test tests/settings-storage.test.mjs
+
+      - name: Settings — transform
+        run: node --test tests/settings-transform.test.mjs
+
+      - name: Settings — updater
+        run: node --test tests/settings-updater.test.mjs
+
+      - name: Settings — voice stage
+        run: node --test tests/settings-voice-stage.test.mjs
 
       - name: Install dependencies
         run: npm install --include=optional
