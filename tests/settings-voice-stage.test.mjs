@@ -11,8 +11,19 @@ const transformed = chronocordFeatureInteractions().transform(source, 'C:/repo/s
 
 test('voice stage opens automatically only after a confirmed voice join', () => {
   assert.match(transformed, /async function openVoiceStage\(tryFullscreen = false\)/);
-  assert.match(transformed, /setVoiceState\(v => \(\{ \.\.\.v, connected:true \}\)\);\s*setVoiceJoinStatus\(""\);\s*void openVoiceStage\(true\);/);
-  assert.match(transformed, /socket\.on\("voice-joined", \(\{channelId,participants\}\) => \{ if\(channelId===voiceChannelRef\.current\) \{ setVoiceState\(v=>\(\{\.\.\.v,connected:true\}\)\); setVoiceStageOpen\(true\); \} \}\);/);
+
+  const confirmedJoinStart = transformed.indexOf('setVoiceState(v => ({ ...v, connected:true }));');
+  const confirmedJoinEnd = transformed.indexOf('finish();', confirmedJoinStart);
+  assert.ok(confirmedJoinStart >= 0 && confirmedJoinEnd > confirmedJoinStart, 'confirmed join block was not found');
+  const confirmedJoinBlock = transformed.slice(confirmedJoinStart, confirmedJoinEnd);
+  assert.ok(confirmedJoinBlock.includes('setVoiceJoinStatus("");'), 'confirmed join should clear the join status');
+  assert.ok(confirmedJoinBlock.includes('void openVoiceStage(true);'), 'confirmed join should open the voice stage');
+
+  const voiceJoinedStart = transformed.indexOf('socket.on("voice-joined"');
+  const voiceJoinedEnd = transformed.indexOf('socket.on("voice-participants"', voiceJoinedStart);
+  assert.ok(voiceJoinedStart >= 0 && voiceJoinedEnd > voiceJoinedStart, 'voice-joined handler was not found');
+  const voiceJoinedBlock = transformed.slice(voiceJoinedStart, voiceJoinedEnd);
+  assert.ok(voiceJoinedBlock.includes('setVoiceStageOpen(true);'), 'voice-joined confirmation should open the stage');
 });
 
 test('voice stage fullscreen is best-effort and disconnect always cleans stage state', () => {
@@ -23,5 +34,6 @@ test('voice stage fullscreen is best-effort and disconnect always cleans stage s
 });
 
 test('manual maximize control reuses the same stage-opening path', () => {
-  assert.match(transformed, /onClick=\{\(\) => \{ void openVoiceStage\(true\); \}\} title="Abrir tela de voz"/);
+  assert.match(transformed, /onClick=\{\(\)\s*=>\s*\{\s*void openVoiceStage\(true\);\s*\}\}\s*title="Abrir tela de voz"/);
+  assert.doesNotMatch(transformed, /onClick=\{async \(\) => \{ setVoiceStageOpen\(true\); try \{ await document\.documentElement\.requestFullscreen\?\.\(\); \} catch \{\} \}\}\s*title="Abrir tela de voz"/);
 });
