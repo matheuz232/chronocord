@@ -79,8 +79,14 @@ jobs:
       - name: Settings — voice stage
         run: node --test tests/settings-voice-stage.test.mjs
 
+      - name: Distribution architecture
+        run: node --test tests/windows-distribution.test.mjs
+
       - name: Install dependencies
         run: npm install --include=optional
+
+      - name: Dependency security audit
+        run: npm audit --audit-level=low
 
       - name: Core syntax preflight
         shell: pwsh
