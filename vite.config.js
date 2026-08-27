@@ -49,7 +49,7 @@ function chronocordWebRtcFix() {
 function chronocordProductFeatures() {
   return {
     name: 'chronocord-product-features',
-    enforce: 'post',
+    enforce: 'pre',
     transform(code, id) {
       if (!id.endsWith('/src/ChronoCord.jsx') && !id.endsWith('\\src\\ChronoCord.jsx')) return null;
       let output = code;
@@ -62,7 +62,7 @@ function chronocordProductFeatures() {
       const jukeboxQueueMarker = 'const [jukeboxMuted, setJukeboxMuted] = useState(false);';
       if (output.includes(jukeboxQueueMarker) && !output.includes('chronocord.jukebox.queueVisible')) { output = output.replace(jukeboxQueueMarker, `${jukeboxQueueMarker}\n  const [showJukeboxQueue, setShowJukeboxQueue] = useState(() => { try { return localStorage.getItem('chronocord.jukebox.queueVisible') !== 'false'; } catch { return true; } });`); changed = true; }
       const fmtMarker = 'function fmtDuration(sec) { const m = Math.floor(sec / 60), s = Math.floor(sec % 60); return `${m}:${String(s).padStart(2, "0")}`; }';
-      if (output.includes(fmtMarker) && !output.includes('chronocord.jukebox.queueVisible')) { output = output.replace(fmtMarker, `${fmtMarker}\n  useEffect(() => { try { localStorage.setItem('chronocord.jukebox.queueVisible', String(showJukeboxQueue)); } catch {} }, [showJukeboxQueue]);`); changed = true; }
+      if (output.includes(fmtMarker) && !output.includes("localStorage.setItem('chronocord.jukebox.queueVisible'")) { output = output.replace(fmtMarker, `${fmtMarker}\n  useEffect(() => { try { localStorage.setItem('chronocord.jukebox.queueVisible', String(showJukeboxQueue)); } catch {} }, [showJukeboxQueue]);`); changed = true; }
       const restrictedMarker = '// ---- canais restritos: só dono/moderador escrevem ----';
       if (output.includes(restrictedMarker) && !output.includes('Watch2Chronos tem prioridade sobre o Jukebox')) { output = output.replace(restrictedMarker, `// Watch2Chronos tem prioridade sobre o Jukebox.\n  useEffect(() => { if (!watch2Open) return; if (isPlaying) { try { pauseJukeboxMedia(); } catch {} setIsPlaying(false); try { emitJukeboxState({ isPlaying: false }); } catch {} } setJukeboxOpen(false); }, [watch2Open]);\n\n  ${restrictedMarker}`); changed = true; }
       const modalMarker = 'function Modal({ onClose, width = 380, bg, border, children }) {';
