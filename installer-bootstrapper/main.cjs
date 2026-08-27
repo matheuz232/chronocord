@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 
 const VERSION = '1.0.3';
+const SMOKE_TEST = process.argv.includes('--smoke-test');
 let win = null;
 let installing = false;
 let selectedInstallDir = null;
@@ -131,5 +132,15 @@ ipcMain.handle('installer:launch', async () => {
   }
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  if (SMOKE_TEST) {
+    const payload = payloadPath();
+    const logo = path.join(process.resourcesPath, 'chronocord-logo.svg');
+    const ok = fs.existsSync(payload) && fs.statSync(payload).size > 1024 * 1024 && fs.existsSync(logo);
+    console.log(ok ? `ChronoCord Installer smoke-test OK (${VERSION})` : 'ChronoCord Installer smoke-test FAILED');
+    app.exit(ok ? 0 : 2);
+    return;
+  }
+  createWindow();
+});
 app.on('window-all-closed', () => app.quit());
