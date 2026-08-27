@@ -12,8 +12,9 @@ if (process.platform !== 'win32') throw new Error('O instalador nativo do Chrono
 const sourceSetup = path.join(root, 'release', `ChronoCord-Setup-${version}.exe`);
 const sourceBlockmap = `${sourceSetup}.blockmap`;
 const nativeSourcePath = path.join(root, 'installer-bootstrapper', 'Program.cs');
+const referenceSourcePath = path.join(root, 'installer-bootstrapper', 'ReferenceInstaller.cs');
 const icon = path.join(root, 'assets', 'chronocord.ico');
-for (const file of [sourceSetup, nativeSourcePath, icon]) {
+for (const file of [sourceSetup, nativeSourcePath, referenceSourcePath, icon]) {
   if (!fs.existsSync(file)) throw new Error(`Arquivo obrigatório ausente: ${path.relative(root, file)}`);
 }
 
@@ -37,6 +38,7 @@ const compileArgs = [
   '/target:winexe',
   '/optimize+',
   '/platform:x64',
+  '/main:ChronoCordInstaller.ReferenceEntryPoint',
   `/out:${baseExe}`,
   `/win32icon:${icon}`,
   '/reference:System.dll',
@@ -44,6 +46,7 @@ const compileArgs = [
   '/reference:System.Drawing.dll',
   '/reference:System.Windows.Forms.dll',
   generatedSource,
+  referenceSourcePath,
 ];
 const compile = spawnSync(csc, compileArgs, { cwd: root, stdio: 'inherit' });
 if (compile.status !== 0) process.exit(compile.status || 1);
