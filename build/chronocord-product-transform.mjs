@@ -45,7 +45,9 @@ export function chronocordProductFeatures() {
       const modalMarker = 'function Modal({ onClose, width = 380, bg, border, children }) {';
       if (output.includes(modalMarker)) {
         output = output.replace(modalMarker, 'function Modal({ onClose, width = 380, bg, border, children, hidden = false }) {');
-        output = output.replace('zIndex: 60 }}>', 'zIndex: 60, display: hidden ? "none" : "flex" }}>');
+        const modalDisplayMarker = 'background: "#000000aa", display: "flex", alignItems:';
+        if (!output.includes(modalDisplayMarker)) throw new Error('ChronoCord 1.0.3 Modal display marker missing.');
+        output = output.replace(modalDisplayMarker, 'background: "#000000aa", display: hidden ? "none" : "flex", alignItems:');
         changed = true;
       }
 
