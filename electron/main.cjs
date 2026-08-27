@@ -132,9 +132,11 @@ function launchUpdateChecker() {
   if (process.env.CHRONOCORD_SKIP_UPDATE === '1') return;
   const helper = path.join(process.resourcesPath, 'ChronoCordUpdater.exe');
   if (!fs.existsSync(helper)) return;
+  const updaterCopy = path.join(app.getPath('temp'), `ChronoCordUpdater-${app.getVersion()}.exe`);
   const { spawn } = require('node:child_process');
   try {
-    const child = spawn(helper, [`--current=${app.getVersion()}`, `--pid=${process.pid}`], { detached: true, stdio: 'ignore', windowsHide: true });
+    fs.copyFileSync(helper, updaterCopy);
+    const child = spawn(updaterCopy, [`--current=${app.getVersion()}`, `--pid=${process.pid}`, `--app-exe=${process.execPath}`], { detached: true, stdio: 'ignore', windowsHide: true });
     child.unref();
   } catch {}
 }
@@ -245,9 +247,6 @@ async function create() {
     if (!url.startsWith(localOrigin)) event.preventDefault();
   });
 
-  // The app runs from a local Electron origin. HTTP API calls are proxied
-  // through the main process above; Socket.IO still uses the renderer, so add
-  // narrowly-scoped CORS response headers for the official ChronoCord server.
   const serverFilter = { urls: [`${SERVER_URL}/*`] };
   session.defaultSession.webRequest.onHeadersReceived(serverFilter, (details, callback) => {
     const headers = { ...details.responseHeaders };
