@@ -9,6 +9,8 @@ const updaterPkg = JSON.parse(readFileSync(resolve(root, 'update-updater', 'pack
 const releaseConfig = JSON.parse(readFileSync(resolve(root, 'release-config.json'), 'utf8'));
 const buildUpdaterSource = readFileSync(resolve(root, 'scripts-build.mjs'), 'utf8');
 const updaterMainSource = readFileSync(resolve(root, 'update-updater', 'main.cjs'), 'utf8');
+const updaterPreloadSource = readFileSync(resolve(root, 'update-updater', 'preload.cjs'), 'utf8');
+const updaterUiSource = readFileSync(resolve(root, 'update-updater', 'ui.html'), 'utf8');
 const electronMainSource = readFileSync(resolve(root, 'electron', 'main.cjs'), 'utf8');
 
 test('updater is packaged as a portable helper and never auto-publishes from CI', () => {
@@ -68,4 +70,22 @@ test('installer binary download only follows bounded HTTPS redirects', () => {
   assert.match(updaterMainSource, /if\(redirects>5\)return Promise\.reject\(new Error\('Muitos redirecionamentos ao baixar a atualização\.'\)\)/);
   assert.match(updaterMainSource, /if\(u\.protocol!=='https:'\)return Promise\.reject\(new Error\('A atualização deve usar HTTPS\.'\)\)/);
   assert.match(updaterMainSource, /download\(new URL\(res\.headers\.location,u\)\.href,dest,onProgress,redirects\+1\)/);
+});
+
+test('visible updater uses only the approved simple states and accessible progress semantics', () => {
+  for (const state of ['Verificando atualização…', 'Baixando atualização…', 'Atualizando ChronoCord…', 'Concluindo…', 'Abrindo o ChronoCord…']) {
+    assert.ok(updaterMainSource.includes(state) || updaterUiSource.includes(state), `missing state: ${state}`);
+  }
+  assert.doesNotMatch(updaterMainSource + updaterUiSource, /Preparando atualização|Instalando atualização/);
+  assert.match(updaterUiSource, /aria-live="polite"/);
+  assert.match(updaterUiSource, /role="progressbar"/);
+  assert.match(updaterUiSource, /aria-valuemin="0"/);
+  assert.match(updaterUiSource, /aria-valuemax="100"/);
+  assert.match(updaterUiSource, /prefers-reduced-motion:\s*reduce/);
+});
+
+test('automatic updater preload exposes no unused update or later commands', () => {
+  assert.doesNotMatch(updaterPreloadSource, /ipcRenderer\.invoke\('update-now'\)|ipcRenderer\.invoke\('later'\)/);
+  assert.doesNotMatch(updaterMainSource, /ipcMain\.handle\('update-now'\)|ipcMain\.handle\('later'\)/);
+  assert.match(updaterPreloadSource, /onEvent/);
 });
