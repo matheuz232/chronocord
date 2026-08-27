@@ -44,7 +44,7 @@
     "win": {
       "target": "nsis",
       "artifactName": "ChronoCord-Setup-${version}.${ext}",
-      "icon": "assets/chronocord-logo-transparent.svg"
+      "icon": "assets/chronocord.ico"
     },
     "nsis": {
       "oneClick": false,
