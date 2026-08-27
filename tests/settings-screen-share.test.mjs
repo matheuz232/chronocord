@@ -44,6 +44,18 @@ test('opening and cancelling the source picker keeps the camera alive until a va
   assert.doesNotMatch(toggleBody, /stopLocalVideo\('camera'\)/);
 });
 
+test('remote video distinguishes paused, ended and connection trouble and automatically returns on resumed frames', () => {
+  for (const marker of ['Transmissão pausada', 'Transmissão encerrada', 'Problema de conexão']) assert.ok(transformedApp.includes(marker), `missing remote state: ${marker}`);
+  assert.match(transformedApp, /track\?\.addEventListener\?\.\('mute'/);
+  assert.match(transformedApp, /track\?\.addEventListener\?\.\('unmute'/);
+  assert.match(transformedApp, /track\?\.addEventListener\?\.\('ended'/);
+  assert.match(transformedApp, /onWaiting=\{markConnectionIssue\}/);
+  assert.match(transformedApp, /onStalled=\{markConnectionIssue\}/);
+  assert.match(transformedApp, /onPlaying=\{markPlaying\}/);
+  assert.match(transformedApp, /A transmissão de \{name\} está pausada\./);
+  assert.match(transformedApp, /Aguarde ou peça para \{name\} retomar a transmissão\./);
+});
+
 test('screen source picker is integrated into the Vite pipeline with a usable accessible UI', () => {
   assert.match(viteSource, /chronocordScreenShare/);
   assert.match(transformedApp, /cc-screen-share-picker/);
