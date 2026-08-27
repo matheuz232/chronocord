@@ -1,0 +1,65 @@
+name: Publish ChronoCord 1.0.3
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish-1.0.3.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    name: Publish validated 1.0.3 release
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4
+
+      - name: Download validated Windows artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          gh run download 33124065523 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "ChronoCord-Windows-8ae19a1ec0ba812280476e3fa5ee81c7128803ee" \
+            --dir release
+          test -f release/ChronoCord-Installer-1.0.3.exe
+          test -f release/ChronoCord-Installer-1.0.3.exe.sha256
+
+      - name: Verify published installer checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release
+          sha256sum --check ChronoCord-Installer-1.0.3.exe.sha256
+
+      - name: Create v1.0.3 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.0.3 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release v1.0.3 already exists; leaving it unchanged."
+            exit 0
+          fi
+          gh release create v1.0.3 \
+            release/ChronoCord-Installer-1.0.3.exe \
+            release/ChronoCord-Installer-1.0.3.exe.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --target 8ae19a1ec0ba812280476e3fa5ee81c7128803ee \
+            --title "ChronoCord 1.0.3" \
+            --notes-file RELEASE-1.0.3.md
+
+      - name: Verify GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view v1.0.3 \
+            --repo "$GITHUB_REPOSITORY" \
+            --json tagName,isDraft,isPrerelease,url,targetCommitish,assets
