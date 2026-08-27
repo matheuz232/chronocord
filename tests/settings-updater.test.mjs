@@ -62,3 +62,10 @@ test('updater aborts instead of installing if the previous ChronoCord process do
   assert.match(updaterMainSource, /reject\(new Error\('O ChronoCord não encerrou a tempo para atualizar\.'\)\)/);
   assert.doesNotMatch(updaterMainSource, /Date\.now\(\)-started>20000\)return resolve\(\)/);
 });
+
+test('installer binary download only follows bounded HTTPS redirects', () => {
+  assert.match(updaterMainSource, /function\s+download\(url,dest,onProgress,redirects=0\)/);
+  assert.match(updaterMainSource, /if\(redirects>5\)return Promise\.reject\(new Error\('Muitos redirecionamentos ao baixar a atualização\.'\)\)/);
+  assert.match(updaterMainSource, /if\(u\.protocol!=='https:'\)return Promise\.reject\(new Error\('A atualização deve usar HTTPS\.'\)\)/);
+  assert.match(updaterMainSource, /download\(new URL\(res\.headers\.location,u\)\.href,dest,onProgress,redirects\+1\)/);
+});
