@@ -39,3 +39,12 @@ test('desktop launches the updater from a temporary copy and supplies the instal
   assert.match(electronMainSource, /spawn\(updaterCopy,/);
   assert.match(electronMainSource, /`--app-exe=\$\{process\.execPath\}`/);
 });
+
+test('updater waits for a silent NSIS install and relaunches the installed ChronoCord executable', () => {
+  assert.match(updaterMainSource, /const\s+appExe\s*=\s*String\(args\['app-exe'\]\s*\|\|\s*''\)/);
+  assert.match(updaterMainSource, /const\s+installArgs\s*=\s*\['\/S'\]/);
+  assert.match(updaterMainSource, /installArgs\.push\(`\/D=\$\{path\.dirname\(appExe\)\}`\)/);
+  assert.match(updaterMainSource, /await\s+runProcess\(dest,\s*installArgs\)/);
+  assert.match(updaterMainSource, /spawn\(appExe,\s*\[\],\s*\{\s*detached:\s*true,\s*stdio:\s*'ignore',\s*windowsHide:\s*false\s*\}\)/);
+  assert.doesNotMatch(updaterMainSource, /spawn\(dest,\s*\['--updated'\]/);
+});
