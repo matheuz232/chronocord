@@ -27,11 +27,11 @@ test('native installer preserves animated UI and folder selection without Electr
 });
 
 test('native installer supports smoke test and silent installation', () => {
-  assert.match(installerSource, /--smoke-test/);
-  assert.match(installerSource, /--silent/);
-  assert.match(installerSource, /--dir=/);
-  assert.match(installerSource, /\/S/);
-  assert.match(installerSource, /\/D=/);
+  assert.match(installerSource, /raw\.StartsWith\("--"/);
+  assert.match(installerSource, /ContainsKey\("smoke-test"\)/);
+  assert.match(installerSource, /ContainsKey\("silent"\)/);
+  assert.match(installerSource, /GetOption\(options,\s*"dir"/);
+  assert.match(installerSource, /"\/S \/D="/);
 });
 
 test('native installer build uses Framework csc and never packages another Electron runtime', () => {
