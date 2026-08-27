@@ -33,11 +33,11 @@ test('native installer restores the approved 920x560 split reference layout', ()
   assert.match(buildSource, /ReferenceInstaller\.cs/);
   assert.match(buildSource, /\/main:ChronoCordInstaller\.ReferenceEntryPoint/);
   assert.match(referenceSource, /ClientSize\s*=\s*new Size\(920,\s*560\)/);
-  assert.match(referenceSource, /Seu espaço, seu ritmo/);
+  assert.match(referenceSource, /S E U\s+E S P A Ç O\s*,\s+S E U\s+R I T M O/i);
   assert.match(referenceSource, /Entre no/);
   assert.match(referenceSource, /ChronoCord\./);
   assert.match(referenceSource, /Pronto para instalar/);
-  assert.match(referenceSource, /Local de instalação/);
+  assert.match(referenceSource, /LOCAL DE INSTALAÇÃO/i);
   assert.match(referenceSource, /Instalar ChronoCord/);
   assert.match(referenceSource, /OrbitVisual/);
   assert.match(referenceSource, /LinearGradientBrush/);
