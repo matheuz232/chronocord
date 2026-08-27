@@ -61,6 +61,6 @@ test('native updater bounds the old-process wait and relaunches installed Chrono
 });
 
 test('native updater has an offline smoke-test path', () => {
-  assert.match(updaterSource, /--smoke-test/);
-  assert.match(updaterSource, /SmokeTest/);
+  assert.match(updaterSource, /ContainsKey\("smoke-test"\)/);
+  assert.match(updaterSource, /SmokeTest\(\)/);
 });
