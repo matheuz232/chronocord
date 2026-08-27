@@ -7,6 +7,51 @@ export function chronocordFeatureInteractions() {
       let output = code;
       let changed = false;
 
+      const stageState = '  const [voiceStageOpen, setVoiceStageOpen] = useState(false);';
+      if (output.includes(stageState) && !output.includes('async function openVoiceStage(tryFullscreen = false)')) {
+        output = output.replace(stageState, `${stageState}
+  async function openVoiceStage(tryFullscreen = false) {
+    setVoiceStageOpen(true);
+    if(tryFullscreen && !document.fullscreenElement) {
+      try { await document.documentElement.requestFullscreen?.(); } catch {}
+    }
+  }`);
+        changed = true;
+      }
+
+      const confirmedJoin = `          setVoiceState(v => ({ ...v, connected:true }));
+          setVoiceJoinStatus("");
+          if (localStreamRef.current) localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = false; });`;
+      if (output.includes(confirmedJoin)) {
+        output = output.replace(confirmedJoin, `          setVoiceState(v => ({ ...v, connected:true }));
+          setVoiceJoinStatus("");
+          void openVoiceStage(true);
+          if (localStreamRef.current) localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = false; });`);
+        changed = true;
+      }
+
+      const voiceJoined = '    socket.on("voice-joined", ({channelId,participants}) => { if(channelId===voiceChannelRef.current) { setVoiceState(v=>({...v,connected:true})); } });';
+      if (output.includes(voiceJoined)) {
+        output = output.replace(voiceJoined, '    socket.on("voice-joined", ({channelId,participants}) => { if(channelId===voiceChannelRef.current) { setVoiceState(v=>({...v,connected:true})); setVoiceStageOpen(true); } });');
+        changed = true;
+      }
+
+      const leaveStart = `  function leaveVoice() {
+    const old=voiceState.channelId;`;
+      if (output.includes(leaveStart)) {
+        output = output.replace(leaveStart, `  function leaveVoice() {
+    setVoiceStageOpen(false);
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    const old=voiceState.channelId;`);
+        changed = true;
+      }
+
+      const manualStage = '<span className="cc-call-control" onClick={async () => { setVoiceStageOpen(true); try { await document.documentElement.requestFullscreen?.(); } catch {} }} title="Abrir tela de voz"';
+      if (output.includes(manualStage)) {
+        output = output.replace(manualStage, '<span className="cc-call-control" onClick={() => { void openVoiceStage(true); }} title="Abrir tela de voz"');
+        changed = true;
+      }
+
       const memberRow = '<div key={m.name} className="hoverable" style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 4px", borderRadius: 6, opacity: group === "offline" ? 0.5 : 1, cursor: "pointer" }} onClick={() => openProfile(m.name === myName ? { isMe: true, name: myName, color: themeColor, status: myStatus, role: "Cronista fundador", imgSrc: myAvatarUrl } : { isMe: false, name: m.name, color: m.color, status: m.status, role: m.role, imgSrc: m.imgSrc })}>';
       const memberRowReplacement = '<div key={m.name} className="hoverable" style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 4px", borderRadius: 8, opacity: group === "offline" ? 0.5 : 1, cursor: "pointer" }} onClick={() => openProfile(m.name === myName ? { isMe: true, name: myName, color: themeColor, status: myStatus, role: "Cronista fundador", imgSrc: myAvatarUrl } : { isMe: false, name: m.name, color: m.color, status: m.status, role: m.role, imgSrc: m.imgSrc })} onContextMenu={(e) => { e.preventDefault(); const p = m.name === myName ? { isMe: true, name: myName, color: themeColor, status: myStatus, role: "Cronista fundador", imgSrc: myAvatarUrl } : { isMe: false, name: m.name, color: m.color, status: m.status, role: m.role, imgSrc: m.imgSrc }; setProfileModal(p); }}>';
       if (output.includes(memberRow)) { output = output.replace(memberRow, memberRowReplacement); changed = true; }
