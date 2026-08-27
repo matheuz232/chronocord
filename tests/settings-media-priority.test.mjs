@@ -25,7 +25,7 @@ test('opening Watch2Chronos locally holds Jukebox without pausing everyone else'
   assert.match(openBlock, /setWatch2Open\(true\);/);
   assert.doesNotMatch(openBlock, /setIsPlaying\(false\)/, 'opening Watch2 must not change the shared Jukebox play state');
 
-  const closeBlock = section('function closeWatch2Chronos()', 'function w2AddToQueue()');
+  const closeBlock = section('function closeWatch2Chronos()', 'function selectJukeboxTrack(track)');
   assert.match(closeBlock, /setWatch2Open\(false\);/);
   assert.doesNotMatch(closeBlock, /setJukeboxLocalHold\(false\)/, 'closing Watch2 must not auto-resume Jukebox');
 });
