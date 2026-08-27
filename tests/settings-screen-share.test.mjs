@@ -56,6 +56,15 @@ test('remote video distinguishes paused, ended and connection trouble and automa
   assert.match(transformedApp, /Aguarde ou peça para \{name\} retomar a transmissão\./);
 });
 
+test('stage uses the dedicated local camera or screen track instead of the microphone-only stream', () => {
+  assert.match(transformedApp, /const localStageVideoStream = useMemo\(\(\) => \{/);
+  assert.match(transformedApp, /const track = localVideoTrackRef\.current;/);
+  assert.match(transformedApp, /return track && track\.readyState === 'live' \? new MediaStream\(\[track\]\) : null;/);
+  assert.match(transformedApp, /\[voiceCameraOn, voiceScreenSharing\]/);
+  assert.match(transformedApp, /const stream = id === authUser\?\.id \? localStageVideoStream : voiceVideoStreams\[id\];/);
+  assert.doesNotMatch(transformedApp, /const stream = id === authUser\?\.id \? localStreamRef\.current : voiceVideoStreams\[id\];/);
+});
+
 test('screen source picker is integrated into the Vite pipeline with a usable accessible UI', () => {
   assert.match(viteSource, /chronocordScreenShare/);
   assert.match(transformedApp, /cc-screen-share-picker/);
