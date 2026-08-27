@@ -46,8 +46,8 @@ test('Jukebox queue visibility persists locally and queued tracks can be selecte
 });
 
 test('Jukebox renders the approved premium shell, artwork backdrop, side queue and background mini-player', () => {
-  assert.match(transformed, /className="cc-jukebox-premium"/);
-  assert.match(transformed, /className="cc-jukebox-artwork"/);
+  assert.match(transformed, /className="[^"]*\bcc-jukebox-premium\b[^"]*"/);
+  assert.match(transformed, /className="[^"]*\bcc-jukebox-artwork\b[^"]*"/);
   assert.match(transformed, /className="cc-jukebox-queue"/);
   assert.match(transformed, /className="cc-jukebox-mini"/);
   assert.match(transformed, /function jukeboxArtworkUrl\(track\)/);
