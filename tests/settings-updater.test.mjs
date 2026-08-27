@@ -56,3 +56,9 @@ test('checksum downloads follow bounded HTTPS redirects before validation', () =
   assert.match(updaterMainSource, /requestText\(new URL\(res\.headers\.location,\s*u\)\.href,\s*redirects\s*\+\s*1\)/);
   assert.match(updaterMainSource, /const\s+checksumText\s*=\s*await\s+requestText\(sha\.browser_download_url\)/);
 });
+
+test('updater aborts instead of installing if the previous ChronoCord process does not exit in time', () => {
+  assert.match(updaterMainSource, /function\s+waitPid\(pid\)\{return new Promise\(\(resolve,reject\)=>/);
+  assert.match(updaterMainSource, /reject\(new Error\('O ChronoCord não encerrou a tempo para atualizar\.'\)\)/);
+  assert.doesNotMatch(updaterMainSource, /Date\.now\(\)-started>20000\)return resolve\(\)/);
+});
