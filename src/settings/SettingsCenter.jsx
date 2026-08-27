@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './settings.css';
+import './settings-scrollbars.css';
 import SettingsSidebar from './components/SettingsSidebar.jsx';
 import AccountSettings from './pages/AccountSettings.jsx';
 import PrivacySettings from './pages/PrivacySettings.jsx';

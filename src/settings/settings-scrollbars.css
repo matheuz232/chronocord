@@ -1,0 +1,50 @@
+.cc-settings-window,
+.cc-settings-main{
+  min-height:0;
+}
+
+.cc-settings-sidebar{
+  min-height:0;
+  height:100%;
+  overflow-y:scroll;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:color-mix(in srgb,var(--cc-text-dim) 58%,transparent) transparent;
+}
+
+.cc-settings-scroll{
+  min-height:0;
+  overflow-y:scroll;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:color-mix(in srgb,var(--cc-text-dim) 58%,transparent) transparent;
+}
+
+.cc-settings-sidebar::-webkit-scrollbar,
+.cc-settings-scroll::-webkit-scrollbar{
+  width:10px;
+}
+
+.cc-settings-sidebar::-webkit-scrollbar-track,
+.cc-settings-scroll::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.cc-settings-sidebar::-webkit-scrollbar-thumb,
+.cc-settings-scroll::-webkit-scrollbar-thumb{
+  min-height:42px;
+  border:3px solid transparent;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--cc-text-dim) 58%,transparent);
+  background-clip:padding-box;
+}
+
+.cc-settings-sidebar::-webkit-scrollbar-thumb:hover,
+.cc-settings-scroll::-webkit-scrollbar-thumb:hover{
+  background:color-mix(in srgb,var(--cc-text-main) 72%,transparent);
+  background-clip:padding-box;
+}
