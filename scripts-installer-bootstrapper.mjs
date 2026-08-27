@@ -26,7 +26,13 @@ const generatedSource = path.join(generatedDir, 'ChronoCordInstaller.generated.c
 const baseExe = path.join(nativeBuildDir, 'ChronoCord-Installer-base.exe');
 const finalTarget = path.join(root, 'release', `ChronoCord-Installer-${version}.exe`);
 
-const source = fs.readFileSync(nativeSourcePath, 'utf8').replaceAll('__VERSION__', version);
+// Program.cs still contains the old native UI for compatibility with its tested
+// install engine. The restored reference UI has its own drag helper, so rename
+// only the generated copy of the old helper to keep both sources collision-free.
+const source = fs.readFileSync(nativeSourcePath, 'utf8')
+  .replaceAll('__VERSION__', version)
+  .replaceAll('Native.', 'ProgramNative.')
+  .replace('internal static class Native', 'internal static class ProgramNative');
 fs.writeFileSync(generatedSource, source);
 
 const windowsDir = process.env.WINDIR || 'C:\\Windows';
