@@ -97,4 +97,4 @@ function chronocordProductFeatures() {
   };
 }
 
-export default defineConfig({ plugins: [react(), chronocordWebRtcFix(), chronocordProductFeatures(), chronocordFeatureInteractions()], base: './', build: { target: 'es2020' } });
+export default defineConfig({ plugins: [chronocordWebRtcFix(), chronocordProductFeatures(), chronocordFeatureInteractions(), react()], base: './', build: { target: 'es2020' } });
