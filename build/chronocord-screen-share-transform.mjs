@@ -8,6 +8,83 @@ export function chronocordScreenShare() {
       let output = code.replace(/\r\n/g, '\n');
       let changed = output !== code;
 
+      const stageVideoMarker = `function StageVideo({ stream, muted=false }) {
+  const ref = useRef(null);
+  useEffect(() => { if (ref.current) ref.current.srcObject = stream || null; return () => { if (ref.current) ref.current.srcObject = null; }; }, [stream]);
+  return <video ref={ref} autoPlay playsInline muted={muted} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000" }} />;
+}`;
+      const remoteVideoMarker = `function RemoteVideo({ stream }) {
+  const ref = useRef(null);
+  useEffect(() => { if (ref.current) ref.current.srcObject = stream || null; return () => { if (ref.current) ref.current.srcObject = null; }; }, [stream]);
+  return <video ref={ref} autoPlay playsInline style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",borderRadius:7,background:"#000"}} />;
+}`;
+      const streamVideoReplacement = `function VideoStreamFrame({ stream, name = 'O usuário', muted = false, stage = false }) {
+  const ref = useRef(null);
+  const stallTimerRef = useRef(null);
+  const [status, setStatus] = useState('connecting');
+  const clearStallTimer = () => { if(stallTimerRef.current){ clearTimeout(stallTimerRef.current); stallTimerRef.current=null; } };
+  const currentTrack = () => stream?.getVideoTracks?.()[0] || null;
+  const markPlaying = () => {
+    clearStallTimer();
+    const track=currentTrack();
+    if(!track || track.readyState==='ended'){ setStatus('ended'); return; }
+    if(track.muted){ setStatus('paused'); return; }
+    setStatus('playing');
+  };
+  const markConnectionIssue = () => {
+    clearStallTimer();
+    const track=currentTrack();
+    if(!track || track.readyState==='ended'){ setStatus('ended'); return; }
+    if(track.muted){ setStatus('paused'); return; }
+    stallTimerRef.current=setTimeout(()=>setStatus('connection'),900);
+  };
+  useEffect(() => {
+    const el=ref.current;
+    const track=currentTrack();
+    clearStallTimer();
+    if(el) el.srcObject=stream || null;
+    if(!track || track.readyState==='ended') setStatus('ended');
+    else if(track.muted) setStatus('paused');
+    else setStatus('connecting');
+    const ended=()=>{ clearStallTimer(); setStatus('ended'); };
+    const mutedTrack=()=>{ clearStallTimer(); setStatus('paused'); };
+    const unmuted=()=>{ clearStallTimer(); setStatus('connecting'); el?.play?.().catch(()=>{}); };
+    track?.addEventListener?.('ended',ended);
+    track?.addEventListener?.('mute',mutedTrack);
+    track?.addEventListener?.('unmute',unmuted);
+    el?.play?.().catch(()=>{});
+    return()=>{
+      clearStallTimer();
+      track?.removeEventListener?.('ended',ended);
+      track?.removeEventListener?.('mute',mutedTrack);
+      track?.removeEventListener?.('unmute',unmuted);
+      if(el) el.srcObject=null;
+    };
+  },[stream]);
+  let overlay=null;
+  if(status==='paused') overlay=<div className="cc-remote-video-paused" role="status"><div className="cc-remote-video-paused-icon">⏸</div><strong>Transmissão pausada</strong><span>A transmissão de {name} está pausada.</span><small>Aguarde ou peça para {name} retomar a transmissão.</small></div>;
+  else if(status==='ended') overlay=<div className="cc-remote-video-paused cc-remote-video-ended" role="status"><div className="cc-remote-video-paused-icon">■</div><strong>Transmissão encerrada</strong><span>A transmissão de {name} foi encerrada.</span><small>Ela voltará quando {name} iniciar uma nova transmissão.</small></div>;
+  else if(status==='connection') overlay=<div className="cc-remote-video-paused cc-remote-video-connection" role="status"><div className="cc-remote-video-paused-icon">↻</div><strong>Problema de conexão</strong><span>O fluxo de vídeo de {name} foi interrompido.</span><small>Tentando recuperar automaticamente…</small></div>;
+  else if(status==='connecting') overlay=<div className="cc-remote-video-paused cc-remote-video-connecting" role="status"><div className="cc-remote-video-paused-icon">…</div><strong>Conectando transmissão</strong><span>Aguardando os primeiros quadros de {name}.</span></div>;
+  return <div className={stage?'cc-stage-video-shell':'cc-remote-video-shell'} style={stage?{position:'absolute',inset:0,background:'#000',overflow:'hidden'}:{position:'relative',width:'100%',aspectRatio:'16/9',borderRadius:7,background:'#000',overflow:'hidden'}}><video ref={ref} autoPlay playsInline muted={muted} onWaiting={markConnectionIssue} onStalled={markConnectionIssue} onPlaying={markPlaying} onCanPlay={markPlaying} style={{position:stage?'absolute':'relative',inset:stage?0:'auto',display:'block',width:'100%',height:'100%',objectFit:stage?'cover':'contain',background:'#000'}} />{overlay}</div>;
+}
+
+function StageVideo({ stream, muted=false, name='O usuário' }) {
+  return <VideoStreamFrame stream={stream} muted={muted} name={name} stage />;
+}`;
+      const remoteVideoReplacement = `function RemoteVideo({ stream, name='O usuário' }) {
+  return <VideoStreamFrame stream={stream} name={name} />;
+}`;
+      if (output.includes(stageVideoMarker) && output.includes(remoteVideoMarker)) {
+        output = output.replace(stageVideoMarker, streamVideoReplacement);
+        output = output.replace(remoteVideoMarker, remoteVideoReplacement);
+        const remoteCall = '<RemoteVideo key={id} stream={stream} />';
+        if(output.includes(remoteCall)) output=output.replace(remoteCall, '<RemoteVideo key={id} stream={stream} name={voiceParticipants[id]?.user?.username || voiceParticipants[id]?.username || \'O usuário\'} />');
+        const stageCall = '<StageVideo stream={stream} muted={id === authUser?.id || voiceState.deafened} />';
+        if(output.includes(stageCall)) output=output.replace(stageCall, '<StageVideo stream={stream} muted={id === authUser?.id || voiceState.deafened} name={id === authUser?.id ? (myName || \'Você\') : name} />');
+        changed = true;
+      }
+
       const stateMarker = '  const [voiceScreenSharing, setVoiceScreenSharing] = useState(false);';
       if (output.includes(stateMarker) && !output.includes('screenSharePickerOpen')) {
         output = output.replace(stateMarker, `${stateMarker}
@@ -195,7 +272,7 @@ export function chronocordScreenShare() {
       }
 
       if (!changed) return null;
-      for (const marker of ['screenSharePickerOpen', 'chromeMediaSourceId', 'cc-screen-share-picker', 'validateVoiceScreenStream']) {
+      for (const marker of ['screenSharePickerOpen', 'chromeMediaSourceId', 'cc-screen-share-picker', 'validateVoiceScreenStream', 'cc-remote-video-paused']) {
         if (!output.includes(marker)) throw new Error(`ChronoCord screen-share marker missing: ${marker}`);
       }
       return { code: output, map: null };
