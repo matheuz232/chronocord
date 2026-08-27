@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import './profile/profilePage.css';
 
 function profileKey(profile) {
   return String(profile?.id || profile?.userId || profile?.name || "me").replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -13,6 +14,11 @@ function defaultProfileData(profile) {
     wantGames: [],
     widgets: ["favoriteGames", "wantGames"],
   };
+}
+
+function activityText(activity) {
+  if (typeof activity === 'string') return activity;
+  return activity?.text || activity?.title || activity?.name || activity?.label || '';
 }
 
 export default function ProfilePage({ profile, isMe, T, themeColor, onClose, onEditProfile }) {
@@ -36,13 +42,18 @@ export default function ProfilePage({ profile, isMe, T, themeColor, onClose, onE
   }, [storageKey, data]);
 
   const name = profile?.name || "Usuário";
-  const avatar = profile?.imgSrc || null;
+  const avatar = profile?.imgSrc || profile?.avatar || null;
   const role = profile?.role || "Cronista";
   const status = profile?.status || "offline";
-  const accent = themeColor || T.color;
-  const cover = profile?.banner || null;
-
+  const accent = themeColor || T.color || '#9b4dff';
+  const cover = typeof profile?.banner === 'string' ? profile.banner : profile?.banner?.src || null;
   const activeWidgets = useMemo(() => data.widgets || [], [data.widgets]);
+
+  const cardStyle = { background: T.bg2, border: `1px solid ${T.border}` };
+  const inputStyle = { background: T.bg1, border: `1px solid ${T.border}`, color: T.textMain };
+  const secondaryButtonStyle = { background: T.bg1, color: T.textMain, borderColor: T.border };
+  const statusColor = ({ online: "#3FD9BE", idle: "#E8A33D", dnd: "#E2574C", offline: "#6A6390" }[status] || "#6A6390");
+  const statusLabel = status === "online" ? "online" : status === "idle" ? "ausente" : status === "dnd" ? "não perturbe" : "offline";
 
   function addPost() {
     const text = postDraft.trim();
@@ -57,13 +68,12 @@ export default function ProfilePage({ profile, isMe, T, themeColor, onClose, onE
   function addGame(type) {
     const value = (type === "favorite" ? gameDraft : wantDraft).trim();
     if (!isMe || !value) return;
-    setData((old) => ({
-      ...old,
-      [type === "favorite" ? "favoriteGames" : "wantGames"]: [
-        ...(old[type === "favorite" ? "favoriteGames" : "wantGames"] || []),
-        { id: Date.now(), title: value },
-      ],
-    }));
+    const field = type === "favorite" ? "favoriteGames" : "wantGames";
+    setData((old) => {
+      const current = old[field] || [];
+      if (current.length >= 20) return old;
+      return { ...old, [field]: [...current, { id: Date.now(), title: value }] };
+    });
     type === "favorite" ? setGameDraft("") : setWantDraft("");
   }
 
@@ -81,101 +91,115 @@ export default function ProfilePage({ profile, isMe, T, themeColor, onClose, onE
     setWidgetPicker(false);
   }
 
-  const card = {
-    background: T.bg2,
-    border: `1px solid ${T.border}`,
-    borderRadius: 12,
-    boxShadow: "0 14px 35px rgba(0,0,0,.18)",
-  };
+  function GameWidget({ type, title, subtitle, items, draft, setDraft }) {
+    return <div className="cc-profile-page-widget" style={{ background: T.bg1 }}>
+      <div className="cc-profile-page-panel-title">{title}</div>
+      <div className="cc-profile-page-widget-sub">{subtitle}</div>
+      {isMe && <div className="cc-profile-page-inline-form">
+        <input className="cc-profile-page-input" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addGame(type)} placeholder="Nome do jogo" style={{ ...inputStyle, background: T.bg2 }} />
+        <button type="button" className="cc-profile-page-button is-primary" onClick={() => addGame(type)} style={{ background: accent }}>＋</button>
+      </div>}
+      {items.length ? <div className="cc-profile-page-game-grid">
+        {items.map((game) => <div className="cc-profile-page-game" key={game.id} title={game.title} style={{ background: T.bg2, border: `1px solid ${T.border}` }}>
+          {game.title}
+          {isMe && <button type="button" className="cc-profile-page-game-remove" onClick={() => removeGame(type, game.id)} style={{ color: T.textFaint }} aria-label={`Remover ${game.title}`}>×</button>}
+        </div>)}
+      </div> : <div className="cc-profile-page-empty" style={{ color: T.textFaint }}>Nenhum jogo adicionado.</div>}
+    </div>;
+  }
 
   return (
-    <div className="cc-profile-page" style={{ position: "absolute", inset: 0, zIndex: 120, background: T.bg0, color: T.textMain, overflowY: "auto" }}>
-      <div style={{ position: "sticky", top: 0, zIndex: 4, height: 54, display: "flex", alignItems: "center", gap: 12, padding: "0 18px", background: `${T.bg0}ee`, backdropFilter: "blur(14px)", borderBottom: `1px solid ${T.border}` }}>
-        <button onClick={onClose} style={{ border: `1px solid ${T.border}`, background: T.bg1, color: T.textMain, borderRadius: 8, padding: "7px 11px", cursor: "pointer" }}>Voltar</button>
-        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}>Perfil</div>
-        <div style={{ flex: 1 }} />
-        {isMe && <button onClick={onEditProfile} style={{ border: 0, background: accent, color: T.text, borderRadius: 8, padding: "8px 12px", fontWeight: 650, cursor: "pointer" }}>Editar perfil</button>}
-      </div>
+    <div className="cc-profile-page" style={{ '--cc-profile-accent': accent, position: "absolute", inset: 0, zIndex: 120, background: T.bg0, color: T.textMain, overflowY: "auto" }}>
+      <header className="cc-profile-page-header" style={{ background: `${T.bg0}ee`, borderColor: T.border }}>
+        <button type="button" className="cc-profile-page-button" onClick={onClose} style={secondaryButtonStyle}>← Voltar</button>
+        <div className="cc-profile-page-header-title">Perfil</div>
+        <div className="cc-profile-page-header-spacer" />
+        {isMe && <button type="button" className="cc-profile-page-button is-primary" onClick={onEditProfile} style={{ background: accent, color: T.text }}>Editar perfil</button>}
+      </header>
 
-      <div style={{ maxWidth: 940, margin: "0 auto", padding: "18px 18px 40px" }}>
-        <div style={{ ...card, overflow: "hidden" }}>
-          <div style={{ height: 200, background: cover ? `url(${cover}) center/cover` : `linear-gradient(120deg, ${accent}55, ${T.bg5}, ${T.bg1})`, position: "relative" }}>
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,.45), transparent 55%)" }} />
-          </div>
-          <div style={{ padding: "0 26px 18px", marginTop: -48, position: "relative" }}>
-            <div style={{ width: 92, height: 92, borderRadius: "50%", overflow: "hidden", border: `5px solid ${T.bg2}`, background: profile?.color || accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {avatar ? <img src={avatar} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 28, fontWeight: 800, color: T.text }}>{name.slice(0,2).toUpperCase()}</span>}
+      <main className="cc-profile-page-content">
+        <section className="cc-profile-page-card" style={cardStyle}>
+          <div className="cc-profile-page-hero" style={{ backgroundImage: cover ? `url(${cover})` : `linear-gradient(125deg, ${accent}88, ${T.bg5}, ${T.bg1})` }} />
+          <div className="cc-profile-page-identity">
+            <div className="cc-profile-page-avatar" style={{ background: profile?.color || accent, color: T.bg2, borderColor: T.bg2 }}>
+              {avatar ? <img src={avatar} alt={name} /> : <span style={{ color: T.text }}>{name.slice(0,2).toUpperCase()}</span>}
             </div>
-            <div style={{ marginTop: 9, display: "flex", alignItems: "flex-start", gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 800 }}>{name}</div>
-                <div style={{ color: T.textFaint, marginTop: 2 }}>{role}</div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, color: T.textDim, fontSize: 12 }}>
-                  <span style={{ width: 9, height: 9, borderRadius: "50%", background: ({ online: "#3FD9BE", idle: "#E8A33D", dnd: "#E2574C", offline: "#6A6390" }[status] || "#6A6390") }} />
-                  <span>{status === "online" ? "online" : status === "idle" ? "ausente" : status === "dnd" ? "não perturbe" : "offline"}</span>
+            <div className="cc-profile-page-heading">
+              <div className="cc-profile-page-heading-main">
+                <div className="cc-profile-page-name">{name}</div>
+                <div className="cc-profile-page-role" style={{ color: T.textFaint }}>{role}</div>
+                <div className="cc-profile-page-presence" style={{ color: T.textDim }}>
+                  <span className="cc-profile-page-presence-dot" style={{ background: statusColor }} />
+                  <span>{statusLabel}</span>
                 </div>
               </div>
-              {!isMe && <button style={{ border: `1px solid ${T.border}`, background: T.bg1, color: T.textMain, borderRadius: 8, padding: "8px 13px", cursor: "pointer" }}>Mensagem</button>}
+              {!isMe && <button type="button" className="cc-profile-page-button" style={secondaryButtonStyle}>Mensagem</button>}
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 3, padding: "0 18px", borderTop: `1px solid ${T.border}` }}>
-            {[['mural','Mural'],['atividade','Atividade'],['desejos','Lista de desejos']].map(([id, label]) => (
-              <button key={id} onClick={() => setTab(id)} style={{ border: 0, borderBottom: `2px solid ${tab === id ? accent : "transparent"}`, background: "transparent", color: tab === id ? T.textMain : T.textDim, padding: "14px 14px 12px", cursor: "pointer", fontWeight: 650 }}>{label}</button>
+          <nav className="cc-profile-page-tabs" aria-label="Seções do perfil" style={{ borderColor: T.border }}>
+            {[["mural","Mural"],["atividade","Atividade"],["desejos","Lista de desejos"]].map(([id, label]) => (
+              <button type="button" key={id} onClick={() => setTab(id)} className={`cc-profile-page-tab ${tab === id ? 'is-active' : ''}`} style={{ color: tab === id ? T.textMain : T.textDim }}>{label}</button>
             ))}
-          </div>
-        </div>
+          </nav>
+        </section>
 
-        {tab === "mural" && (
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(260px,.65fr)", gap: 14, marginTop: 14 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {isMe && <div style={{ ...card, padding: 16 }}>
-                <div style={{ fontWeight: 700, marginBottom: 9 }}>No que você está pensando?</div>
-                <textarea value={postDraft} onChange={(e) => setPostDraft(e.target.value)} placeholder="Compartilhe algo com seus amigos..." style={{ width: "100%", minHeight: 88, resize: "vertical", boxSizing: "border-box", background: T.bg1, border: `1px solid ${T.border}`, color: T.textMain, borderRadius: 9, padding: 10, outline: "none" }} />
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 9 }}><button onClick={addPost} style={{ border: 0, background: accent, color: T.text, borderRadius: 8, padding: "8px 14px", fontWeight: 700, cursor: "pointer" }}>Publicar</button></div>
+        {tab === "mural" && <div className="cc-profile-page-grid">
+          <div className="cc-profile-page-stack">
+            {isMe && <section className="cc-profile-page-panel cc-profile-page-card" style={cardStyle}>
+              <div className="cc-profile-page-panel-title">No que você está pensando?</div>
+              <textarea className="cc-profile-page-textarea" value={postDraft} onChange={(e) => setPostDraft(e.target.value)} placeholder="Compartilhe algo com seus amigos..." style={inputStyle} />
+              <div className="cc-profile-page-actions"><button type="button" className="cc-profile-page-button is-primary" onClick={addPost} style={{ background: accent, color: T.text }}>Publicar</button></div>
+            </section>}
+
+            {(data.posts || []).map((post) => <article className="cc-profile-page-panel cc-profile-page-card" key={post.id} style={cardStyle}>
+              <div className="cc-profile-page-post-head">
+                <div className="cc-profile-page-mini-avatar" style={{ background: profile?.color || accent, color: T.text }}>
+                  {avatar ? <img src={avatar} alt="" /> : name.slice(0,2).toUpperCase()}
+                </div>
+                <div><strong>{name}</strong><div className="cc-profile-page-post-time" style={{ color: T.textFaint }}>{new Date(post.createdAt).toLocaleString("pt-BR")}</div></div>
+              </div>
+              <div className="cc-profile-page-post-copy" style={{ color: T.textDim }}>{post.text}</div>
+            </article>)}
+            {!data.posts?.length && <div className="cc-profile-page-panel cc-profile-page-card cc-profile-page-empty" style={{ ...cardStyle, color: T.textFaint }}>Este mural ainda está vazio.</div>}
+          </div>
+
+          <aside className="cc-profile-page-stack">
+            <section className="cc-profile-page-panel cc-profile-page-card" style={cardStyle}>
+              <div className="cc-profile-page-panel-title">Sobre mim</div>
+              <div style={{ color: T.textDim, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{data.intro || "Nada informado ainda."}</div>
+            </section>
+
+            <section className="cc-profile-page-panel cc-profile-page-card" style={cardStyle}>
+              <div className="cc-profile-page-widget-head"><strong>Seus Widgets</strong>{isMe && <button type="button" className="cc-profile-page-button" onClick={() => setWidgetPicker((value) => !value)} style={secondaryButtonStyle}>＋ Adicionar widget</button>}</div>
+              {widgetPicker && isMe && <div className="cc-profile-page-widget-picker" style={{ background: T.bg1, border: `1px solid ${T.border}` }}>
+                {[["favoriteGames","Jogos que eu gosto"],["wantGames","Quero jogar"]].map(([id,label]) => <button type="button" key={id} onClick={() => toggleWidget(id)} className="cc-profile-page-chip-button" style={{ color: T.textMain, borderColor: T.border, background: activeWidgets.includes(id) ? `${accent}22` : "transparent" }}>{activeWidgets.includes(id) ? "✓ " : ""}{label}</button>)}
               </div>}
-              {(data.posts || []).map((post) => (
-                <div key={post.id} style={{ ...card, padding: 16 }}>
-                  <div style={{ display: "flex", gap: 9, alignItems: "center", marginBottom: 10 }}><div style={{ width: 34, height: 34, borderRadius: "50%", background: profile?.color || accent, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: T.text, fontWeight: 750 }}>{avatar ? <img src={avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : name.slice(0,2).toUpperCase()}</div><div><div style={{ fontWeight: 700 }}>{name}</div><div style={{ fontSize: 11, color: T.textFaint }}>{new Date(post.createdAt).toLocaleString("pt-BR")}</div></div></div>
-                  <div style={{ color: T.textDim, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{post.text}</div>
-                </div>
-              ))}
-              {!data.posts?.length && <div style={{ ...card, padding: 24, color: T.textFaint, textAlign: "center" }}>Este mural ainda está vazio.</div>}
-            </div>
+              {activeWidgets.includes("favoriteGames") && <GameWidget type="favorite" title="Jogos que eu gosto" subtitle="Adicione até 20 jogos" items={data.favoriteGames || []} draft={gameDraft} setDraft={setGameDraft} />}
+              {activeWidgets.includes("wantGames") && <GameWidget type="want" title="Quero jogar" subtitle="Adicione até 20 jogos" items={data.wantGames || []} draft={wantDraft} setDraft={setWantDraft} />}
+            </section>
+          </aside>
+        </div>}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ ...card, padding: 16 }}>
-                <div style={{ fontWeight: 750, marginBottom: 7 }}>Sobre mim</div>
-                <div style={{ color: T.textDim, lineHeight: 1.55 }}>{data.intro || "Nada informado ainda."}</div>
-              </div>
+        {tab === "atividade" && <section className="cc-profile-page-panel cc-profile-page-card cc-profile-page-page-panel" style={cardStyle}>
+          <div className="cc-profile-page-panel-title">Atividade</div>
+          {(data.activity || []).length ? (data.activity || []).map((activity, index) => <div className="cc-profile-page-activity-row" key={activity?.id || `${activityText(activity)}-${index}`} style={{ color: T.textDim, borderColor: T.border }}>{activityText(activity)}</div>) : <div className="cc-profile-page-empty" style={{ color: T.textFaint }}>Nenhuma atividade compartilhada ainda.</div>}
+        </section>}
 
-              <div style={{ ...card, padding: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <div style={{ fontWeight: 750, flex: 1 }}>Seus Widgets</div>
-                  {isMe && <button onClick={() => setWidgetPicker((v) => !v)} style={{ border: `1px solid ${T.border}`, background: T.bg1, color: T.textMain, borderRadius: 7, padding: "7px 10px", cursor: "pointer" }}>＋ Adicionar widget</button>}
-                </div>
-                {widgetPicker && isMe && <div style={{ marginBottom: 12, padding: 10, background: T.bg1, border: `1px solid ${T.border}`, borderRadius: 8 }}>{[["favoriteGames","Jogos que eu gosto"],["wantGames","Quero jogar"]].map(([id,label]) => <button key={id} onClick={() => toggleWidget(id)} style={{ marginRight: 7, marginBottom: 7, border: `1px solid ${T.border}`, background: activeWidgets.includes(id) ? `${accent}22` : "transparent", color: T.textMain, borderRadius: 7, padding: "7px 10px", cursor: "pointer" }}>{activeWidgets.includes(id) ? "✓ " : ""}{label}</button>)}</div>}
-
-                {activeWidgets.includes("favoriteGames") && <div style={{ marginBottom: 14, padding: 12, background: T.bg1, borderRadius: 9 }}>
-                  <div style={{ fontWeight: 700 }}>Jogos que eu gosto</div><div style={{ color: T.textFaint, fontSize: 11, marginBottom: 10 }}>Adicione até 20 jogos</div>
-                  {isMe && <div style={{ display: "flex", gap: 7, marginBottom: 9 }}><input value={gameDraft} onChange={(e)=>setGameDraft(e.target.value)} onKeyDown={(e)=>e.key === "Enter" && addGame("favorite")} placeholder="Nome do jogo" style={{ flex:1, minWidth:0, background:T.bg2, border:`1px solid ${T.border}`, color:T.textMain, borderRadius:7, padding:"8px 10px", outline:"none" }}/><button onClick={()=>addGame("favorite")} style={{ border:0, background:accent, color:T.text, borderRadius:7, padding:"0 10px", cursor:"pointer" }}>＋</button></div>}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 8 }}>{(data.favoriteGames || []).map((g) => <div key={g.id} title={g.title} style={{ minWidth:0, padding:10, minHeight:44, borderRadius:8, background:T.bg2, border:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center", fontSize:11.5, position:"relative" }}>{g.title}{isMe && <button onClick={()=>removeGame("favorite",g.id)} style={{ position:"absolute", top:3, right:3, border:0, background:"transparent", color:T.textFaint, cursor:"pointer" }}>×</button>}</div>)}</div>
-                </div>}
-
-                {activeWidgets.includes("wantGames") && <div style={{ padding: 12, background: T.bg1, borderRadius: 9 }}>
-                  <div style={{ fontWeight: 700 }}>Quero jogar</div><div style={{ color: T.textFaint, fontSize: 11, marginBottom: 10 }}>Adicione até 20 jogos</div>
-                  {isMe && <div style={{ display: "flex", gap: 7, marginBottom: 9 }}><input value={wantDraft} onChange={(e)=>setWantDraft(e.target.value)} onKeyDown={(e)=>e.key === "Enter" && addGame("want")} placeholder="Nome do jogo" style={{ flex:1, minWidth:0, background:T.bg2, border:`1px solid ${T.border}`, color:T.textMain, borderRadius:7, padding:"8px 10px", outline:"none" }}/><button onClick={()=>addGame("want")} style={{ border:0, background:accent, color:T.text, borderRadius:7, padding:"0 10px", cursor:"pointer" }}>＋</button></div>}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 8 }}>{(data.wantGames || []).map((g) => <div key={g.id} title={g.title} style={{ minWidth:0, padding:10, minHeight:44, borderRadius:8, background:T.bg2, border:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"center", textAlign:"center", fontSize:11.5, position:"relative" }}>{g.title}{isMe && <button onClick={()=>removeGame("want",g.id)} style={{ position:"absolute", top:3, right:3, border:0, background:"transparent", color:T.textFaint, cursor:"pointer" }}>×</button>}</div>)}</div>
-                </div>}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab === "atividade" && <div style={{ ...card, padding: 18, marginTop: 14 }}><div style={{ fontWeight: 750, marginBottom: 12 }}>Atividade</div>{(data.activity || []).length ? data.activity.map((a) => <div key={a.id} style={{ padding: "11px 0", borderBottom: `1px solid ${T.border}`, color:T.textDim }}>{a.text}</div>) : <div style={{ color:T.textFaint, textAlign:"center", padding:"22px 0" }}>Nenhuma atividade compartilhada ainda.</div>}</div>}
-
-        {tab === "desejos" && <div style={{ ...card, padding: 18, marginTop: 14 }}><div style={{ fontWeight: 750, marginBottom: 12 }}>Lista de desejos</div>{isMe && <div style={{ display:"flex", gap:7, marginBottom:12 }}><input value={wantDraft} onChange={(e)=>setWantDraft(e.target.value)} onKeyDown={(e)=>e.key === "Enter" && addGame("want")} placeholder="Adicionar jogo..." style={{flex:1, background:T.bg1, border:`1px solid ${T.border}`, color:T.textMain, borderRadius:8, padding:"9px 10px", outline:"none"}}/><button onClick={()=>addGame("want")} style={{border:0, background:accent, color:T.text, borderRadius:8, padding:"0 13px", cursor:"pointer"}}>Adicionar</button></div>}{(data.wantGames || []).map((g)=><div key={g.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:`1px solid ${T.border}`}}><div style={{width:8,height:8,borderRadius:"50%",background:accent}}/><span style={{flex:1}}>{g.title}</span>{isMe && <button onClick={()=>removeGame("want",g.id)} style={{border:0,background:"transparent",color:T.textFaint,cursor:"pointer"}}>Remover</button>}</div>)}{!data.wantGames?.length && <div style={{color:T.textFaint,textAlign:"center",padding:"20px 0"}}>Sua lista de desejos está vazia.</div>}</div>}
-      </div>
+        {tab === "desejos" && <section className="cc-profile-page-panel cc-profile-page-card cc-profile-page-page-panel" style={cardStyle}>
+          <div className="cc-profile-page-panel-title">Lista de desejos</div>
+          {isMe && <div className="cc-profile-page-inline-form">
+            <input className="cc-profile-page-input" value={wantDraft} onChange={(e) => setWantDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addGame("want")} placeholder="Adicionar jogo..." style={inputStyle} />
+            <button type="button" className="cc-profile-page-button is-primary" onClick={() => addGame("want")} style={{ background: accent, color: T.text }}>Adicionar</button>
+          </div>}
+          {(data.wantGames || []).map((game) => <div className="cc-profile-page-wish-row" key={game.id} style={{ borderColor: T.border }}>
+            <span className="cc-profile-page-wish-dot" />
+            <span className="cc-profile-page-wish-title">{game.title}</span>
+            {isMe && <button type="button" className="cc-profile-page-button" onClick={() => removeGame("want", game.id)} style={secondaryButtonStyle}>Remover</button>}
+          </div>)}
+          {!data.wantGames?.length && <div className="cc-profile-page-empty" style={{ color: T.textFaint }}>Sua lista de desejos está vazia.</div>}
+        </section>}
+      </main>
     </div>
   );
 }
