@@ -1,5 +1,6 @@
 {
   "githubOwner": "matheuz232",
   "githubRepo": "chronocord-server",
+  "releaseRepo": "chronocord",
   "manifestPath": "updates/latest.json"
 }
