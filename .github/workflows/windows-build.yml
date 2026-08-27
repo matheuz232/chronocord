@@ -76,6 +76,9 @@ jobs:
       - name: Settings — updater
         run: node --test tests/settings-updater.test.mjs
 
+      - name: Settings — native installer
+        run: node --test tests/settings-installer-native.test.mjs
+
       - name: Settings — voice stage
         run: node --test tests/settings-voice-stage.test.mjs
 
@@ -96,9 +99,6 @@ jobs:
             'build-preflight.mjs',
             'scripts-build.mjs',
             'scripts-installer-bootstrapper.mjs',
-            'update-updater/main.cjs',
-            'installer-bootstrapper/main.cjs',
-            'installer-bootstrapper/preload.cjs',
             'server/server.js',
             'electron/main.cjs',
             'electron/preload.cjs'
@@ -114,62 +114,69 @@ jobs:
       - name: Build preflight
         run: node build-preflight.mjs
 
-      - name: Build installers
+      - name: Build installer
         run: npm run dist
 
-      - name: Verify installers
+      - name: Smoke-test native updater
+        shell: pwsh
+        run: |
+          $updater = Get-Item "build/updater/ChronoCordUpdater.exe" -ErrorAction Stop
+          if ($updater.Length -gt 2MB) { throw "Native updater unexpectedly large: $($updater.Length) bytes" }
+          $proc = Start-Process -FilePath $updater.FullName -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Native updater smoke-test failed with exit code $($proc.ExitCode)" }
+          Write-Host "Native updater: $($updater.Length) bytes"
+
+      - name: Verify one final installer
         shell: pwsh
         run: |
           $version = (Get-Content package.json | ConvertFrom-Json).version
-          $setup = Get-Item "release/ChronoCord-Setup-$version.exe" -ErrorAction Stop
           $installer = Get-Item "release/ChronoCord-Installer-$version.exe" -ErrorAction Stop
-          if ($setup.Length -lt 1MB) { throw "Setup unexpectedly small: $($setup.Length) bytes" }
-          if ($installer.Length -lt 1MB) { throw "Animated installer unexpectedly small: $($installer.Length) bytes" }
-          Write-Host "Setup: $($setup.Name) — $($setup.Length) bytes"
+          if ($installer.Length -lt 1MB) { throw "Installer unexpectedly small: $($installer.Length) bytes" }
+          if ($installer.Length -gt 285000000) { throw "Installer exceeds 285 MB hard limit: $($installer.Length) bytes" }
+          if (Test-Path "release/ChronoCord-Setup-$version.exe") { throw 'Internal Setup leaked into final artifacts.' }
+          $primary = @(Get-ChildItem release -File | Where-Object { $_.Name -match '^ChronoCord-(Setup|Installer)-.*\.exe$' })
+          if ($primary.Count -ne 1) { throw "Expected exactly one primary installer, found $($primary.Count)." }
           Write-Host "Installer: $($installer.Name) — $($installer.Length) bytes"
 
-      - name: Smoke-test NSIS payload
-        shell: pwsh
-        run: |
-          $version = (Get-Content package.json | ConvertFrom-Json).version
-          $setup = (Resolve-Path "release/ChronoCord-Setup-$version.exe").Path
-          $target = Join-Path $env:RUNNER_TEMP 'ChronoCord-Smoke'
-          New-Item -ItemType Directory -Force -Path $target | Out-Null
-          $proc = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$target") -Wait -PassThru
-          if ($proc.ExitCode -ne 0) { throw "NSIS smoke install failed with exit code $($proc.ExitCode)" }
-          $installed = Join-Path $target 'ChronoCord.exe'
-          if (-not (Test-Path $installed)) { throw "Installed executable not found at $installed" }
-          if ((Get-Item $installed).Length -lt 1MB) { throw 'Installed ChronoCord.exe is unexpectedly small.' }
-          Write-Host "NSIS smoke install OK: $installed"
-
-      - name: Smoke-test animated bootstrapper
+      - name: Smoke-test embedded payload
         shell: pwsh
         run: |
           $version = (Get-Content package.json | ConvertFrom-Json).version
           $installer = (Resolve-Path "release/ChronoCord-Installer-$version.exe").Path
           $proc = Start-Process -FilePath $installer -ArgumentList '--smoke-test' -Wait -PassThru
-          if ($proc.ExitCode -ne 0) { throw "Animated installer smoke-test failed with exit code $($proc.ExitCode)" }
-          Write-Host 'Animated installer smoke-test OK.'
+          if ($proc.ExitCode -ne 0) { throw "Installer payload smoke-test failed with exit code $($proc.ExitCode)" }
+          Write-Host 'Embedded payload SHA-256 smoke-test OK.'
+
+      - name: Smoke-test silent installation
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $installer = (Resolve-Path "release/ChronoCord-Installer-$version.exe").Path
+          $target = Join-Path $env:RUNNER_TEMP 'ChronoCord-Smoke'
+          New-Item -ItemType Directory -Force -Path $target | Out-Null
+          $proc = Start-Process -FilePath $installer -ArgumentList @('--silent', "--dir=$target") -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Final installer smoke install failed with exit code $($proc.ExitCode)" }
+          $installed = Join-Path $target 'ChronoCord.exe'
+          if (-not (Test-Path $installed)) { throw "Installed executable not found at $installed" }
+          if ((Get-Item $installed).Length -lt 1MB) { throw 'Installed ChronoCord.exe is unexpectedly small.' }
+          Write-Host "Final installer smoke install OK: $installed"
 
       - name: Generate SHA-256
         shell: pwsh
         run: |
-          $files = Get-ChildItem -Path release -File | Where-Object { $_.Name -match '^ChronoCord-(Setup|Installer)-.*\.exe$' }
-          if ($files.Count -lt 2) { throw 'Expected both Setup and Installer executables.' }
-          foreach ($exe in $files) {
-            $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
-            "$hash  $($exe.Name)" | Out-File "$($exe.FullName).sha256" -Encoding ascii -NoNewline
-          }
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $installer = Get-Item "release/ChronoCord-Installer-$version.exe" -ErrorAction Stop
+          $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($installer.Name)" | Out-File "$($installer.FullName).sha256" -Encoding ascii -NoNewline
+          Write-Host "SHA-256: $hash"
 
-      - name: Upload Windows installers
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: ChronoCord-Windows-${{ github.sha }}
           path: |
             release/ChronoCord-Installer-*.exe
             release/ChronoCord-Installer-*.exe.sha256
-            release/ChronoCord-Setup-*.exe
-            release/ChronoCord-Setup-*.exe.sha256
           if-no-files-found: error
           retention-days: 14
 
@@ -182,6 +189,4 @@ jobs:
           files: |
             release/ChronoCord-Installer-*.exe
             release/ChronoCord-Installer-*.exe.sha256
-            release/ChronoCord-Setup-*.exe
-            release/ChronoCord-Setup-*.exe.sha256
           fail_on_unmatched_files: true
