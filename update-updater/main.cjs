@@ -19,13 +19,40 @@ function requestGithubLatestRelease(repo){
     const u=new URL(`https://api.github.com/repos/${repo}/releases/latest`);
     const req=https.get(u,{headers:{'User-Agent':'ChronoCord-Updater/1.0','Accept':'application/vnd.github+json','Cache-Control':'no-cache'}},res=>{let data='';res.setEncoding('utf8');res.on('data',d=>data+=d);res.on('end',()=>{if(res.statusCode<200||res.statusCode>=300)return reject(new Error(`GitHub HTTP ${res.statusCode}`));try{resolve(JSON.parse(data))}catch{reject(new Error('Resposta do GitHub inválida.'))}})});req.setTimeout(15000,()=>req.destroy(new Error('Tempo esgotado.')));req.on('error',reject)})
 }
+
+function requestText(url, redirects = 0){
+  if (redirects > 5) return Promise.reject(new Error('Muitos redirecionamentos ao baixar o checksum.'));
+  const u = new URL(url);
+  if (u.protocol !== 'https:') return Promise.reject(new Error('O checksum deve usar HTTPS.'));
+  return new Promise((resolve,reject)=>{
+    const req=https.get(u,{headers:{'User-Agent':'ChronoCord-Updater/1.0','Accept':'text/plain','Cache-Control':'no-cache'}},res=>{
+      if(res.statusCode>=300&&res.statusCode<400&&res.headers.location){
+        res.resume();
+        return requestText(new URL(res.headers.location, u).href, redirects + 1).then(resolve,reject);
+      }
+      if(res.statusCode<200||res.statusCode>=300){res.resume();return reject(new Error(`Checksum HTTP ${res.statusCode}`))}
+      let data='';
+      let bytes=0;
+      res.setEncoding('utf8');
+      res.on('data',chunk=>{
+        bytes+=Buffer.byteLength(chunk);
+        if(bytes>1024*1024){req.destroy(new Error('Checksum inesperadamente grande.'));return}
+        data+=chunk;
+      });
+      res.on('end',()=>resolve(data.trim()));
+    });
+    req.setTimeout(15000,()=>req.destroy(new Error('Tempo esgotado ao baixar o checksum.')));
+    req.on('error',reject);
+  });
+}
+
 async function resolveLatest(){
   if(RELEASE_REPO && RELEASE_REPO!=='__RELEASE_REPO__'){
     const rel=await requestGithubLatestRelease(RELEASE_REPO);
     const exe=rel.assets?.find(a=>/^ChronoCord-Setup-.*\.exe$/i.test(a.name));
     const sha=rel.assets?.find(a=>/^ChronoCord-Setup-.*\.sha256$/i.test(a.name));
     if(!exe||!sha) throw new Error('A release mais recente não contém o instalador e o checksum esperados.');
-    const checksumText=await new Promise((resolve,reject)=>{https.get(sha.browser_download_url,{headers:{'User-Agent':'ChronoCord-Updater/1.0'}},r=>{let d='';r.setEncoding('utf8');r.on('data',x=>d+=x);r.on('end',()=>r.statusCode===200?resolve(d.trim()):reject(new Error(`Checksum HTTP ${r.statusCode}`)))}).on('error',reject)});
+    const checksumText=await requestText(sha.browser_download_url);
     const checksum=(checksumText.match(/[a-f0-9]{64}/i)||[])[0];
     if(!checksum) throw new Error('Checksum SHA-256 inválido na release.');
     return {product:'ChronoCord',version:rel.tag_name.replace(/^chronocord-v/i,'').replace(/^v/i,''),title:rel.name||rel.tag_name,notes:rel.body||'',mandatory:false,size:exe.size||0,url:exe.browser_download_url,sha256:checksum};
