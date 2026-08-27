@@ -21,11 +21,13 @@
       "main.cjs",
       "preload.cjs",
       "ui.html",
-      "package.json"
+      "package.json",
+      "branding/chronocord-logo.svg"
     ],
     "win": {
       "target": "portable",
-      "artifactName": "ChronoCordUpdater.exe"
+      "artifactName": "ChronoCordUpdater.exe",
+      "icon": "../assets/chronocord.ico"
     },
     "electronVersion": "38.0.0"
   }
