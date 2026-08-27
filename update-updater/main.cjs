@@ -61,7 +61,33 @@ async function resolveLatest(){
 }
 function cmp(a,b){const pa=String(a).replace(/^v/i,'').split('-')[0].split('.').map(Number);const pb=String(b).replace(/^v/i,'').split('-')[0].split('.').map(Number);for(let i=0;i<3;i++){if((pa[i]||0)!==(pb[i]||0))return (pa[i]||0)-(pb[i]||0)}return 0}
 function requestJson(url){return new Promise((resolve,reject)=>{const u=new URL(url);const req=https.get(u,{headers:{'User-Agent':'ChronoCord-Updater/1.0','Accept':'application/json','Cache-Control':'no-cache'}},res=>{let data='';res.setEncoding('utf8');res.on('data',d=>data+=d);res.on('end',()=>{if(res.statusCode<200||res.statusCode>=300)return reject(new Error(`HTTP ${res.statusCode}`));try{resolve(JSON.parse(data))}catch{reject(new Error('Manifesto inválido.'))}})});req.setTimeout(15000,()=>req.destroy(new Error('Tempo esgotado.')));req.on('error',reject)})}
-function download(url,dest,onProgress){return new Promise((resolve,reject)=>{const u=new URL(url);const file=fs.createWriteStream(dest);const req=https.get(u,{headers:{'User-Agent':'ChronoCord-Updater/1.0'}},res=>{if(res.statusCode>=300&&res.statusCode<400&&res.headers.location){file.close();fs.rmSync(dest,{force:true});return download(new URL(res.headers.location,u).href,dest,onProgress).then(resolve,reject)}if(res.statusCode!==200){file.close();fs.rmSync(dest,{force:true});return reject(new Error(`Download HTTP ${res.statusCode}`))}const total=Number(res.headers['content-length']||0);let done=0;res.on('data',chunk=>{done+=chunk.length;onProgress?.(total?Math.round(done/total*100):0)});res.pipe(file);file.on('finish',()=>file.close(resolve));});req.setTimeout(120000,()=>req.destroy(new Error('Download expirou.')));req.on('error',e=>{file.close();fs.rmSync(dest,{force:true});reject(e)})})}
+function download(url,dest,onProgress,redirects=0){
+  if(redirects>5)return Promise.reject(new Error('Muitos redirecionamentos ao baixar a atualização.'));
+  const u=new URL(url);
+  if(u.protocol!=='https:')return Promise.reject(new Error('A atualização deve usar HTTPS.'));
+  return new Promise((resolve,reject)=>{
+    const file=fs.createWriteStream(dest);
+    const fail=(error)=>{file.close(()=>{});fs.rmSync(dest,{force:true});reject(error)};
+    const req=https.get(u,{headers:{'User-Agent':'ChronoCord-Updater/1.0'}},res=>{
+      if(res.statusCode>=300&&res.statusCode<400&&res.headers.location){
+        res.resume();
+        file.close(()=>{
+          fs.rmSync(dest,{force:true});
+          download(new URL(res.headers.location,u).href,dest,onProgress,redirects+1).then(resolve,reject);
+        });
+        return;
+      }
+      if(res.statusCode!==200){res.resume();return fail(new Error(`Download HTTP ${res.statusCode}`))}
+      const total=Number(res.headers['content-length']||0);let done=0;
+      res.on('data',chunk=>{done+=chunk.length;onProgress?.(total?Math.round(done/total*100):0)});
+      res.pipe(file);
+      file.on('finish',()=>file.close(resolve));
+      res.on('error',fail);
+    });
+    req.setTimeout(120000,()=>req.destroy(new Error('Download expirou.')));
+    req.on('error',fail);
+  });
+}
 function sha256(file){return new Promise((resolve,reject)=>{const h=crypto.createHash('sha256');const s=fs.createReadStream(file);s.on('data',d=>h.update(d));s.on('end',()=>resolve(h.digest('hex')));s.on('error',reject)})}
 function waitPid(pid){return new Promise((resolve,reject)=>{if(!pid||pid===process.pid)return resolve();const started=Date.now();const check=()=>{try{process.kill(pid,0);if(Date.now()-started>20000)return reject(new Error('O ChronoCord não encerrou a tempo para atualizar.'));setTimeout(check,250)}catch{resolve()}};check()})}
 function runProcess(file,args){return new Promise((resolve,reject)=>{const child=spawn(file,args,{detached:false,stdio:'ignore',windowsHide:true});child.once('error',reject);child.once('close',code=>code===0?resolve():reject(new Error(`Instalador encerrou com código ${code}.`)))})}
