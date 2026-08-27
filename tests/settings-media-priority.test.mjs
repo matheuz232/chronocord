@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chronocordFeatureInteractions } from '../build/chronocord-feature-transform.mjs';
+import { chronocordProductFeatures } from '../build/chronocord-product-transform.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src', 'ChronoCord.jsx'), 'utf8');
-const transformed = chronocordFeatureInteractions().transform(source, 'C:/repo/src/ChronoCord.jsx')?.code || source;
+const transformed = chronocordProductFeatures().transform(source, 'C:/repo/src/ChronoCord.jsx')?.code || source;
 
 function section(startMarker, endMarker) {
   const start = transformed.indexOf(startMarker);
