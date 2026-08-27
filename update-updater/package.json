@@ -4,7 +4,7 @@
   "private": true,
   "main": "main.cjs",
   "scripts": {
-    "dist:win": "electron-builder --win nsis --x64"
+    "dist:win": "electron-builder --win portable --x64 --publish never"
   },
   "devDependencies": {
     "electron": "38.0.0",
