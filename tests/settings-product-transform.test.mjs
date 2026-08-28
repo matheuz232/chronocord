@@ -7,9 +7,9 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'build', 'chronocord-product-transform.mjs'), 'utf8');
 
-test('product transform keeps the packaged app version synchronized at 1.0.3', () => {
+test('product transform keeps the packaged app version synchronized at 1.0.4', () => {
   assert.match(source, /const appVersionMarker = 'const APP_VERSION = "1\.0\.2";'/);
-  assert.match(source, /output\.replace\(appVersionMarker, 'const APP_VERSION = "1\.0\.3";'\)/);
+  assert.match(source, /output\.replace\(appVersionMarker, 'const APP_VERSION = "1\.0\.4";'\)/);
 });
 
 test('product transform replaces the existing Modal display value instead of adding a duplicate key', () => {
