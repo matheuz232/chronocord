@@ -6,7 +6,7 @@ const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
 
 const REAL_ACCOUNT_BINDINGS = /createAccountApi|accountApi\s*=|accountApi\.|changePassword\s*\(|setupMfa\s*\(|enableMfa\s*\(|disableMfa\s*\(|revokeSession\s*\(|revokeOtherSessions\s*\(|deleteAccount\s*\(|deactivate\s*\(/;
 
-test('ChronoCord 1.0.3 Settings Center does not inject authenticated account-security APIs', () => {
+test('ChronoCord 1.0.4 Settings Center does not inject authenticated account-security APIs', () => {
   const transform = read('build/chronocord-settings-transform.mjs');
   const center = read('src/settings/SettingsCenter.jsx');
 
@@ -16,7 +16,7 @@ test('ChronoCord 1.0.3 Settings Center does not inject authenticated account-sec
   assert.doesNotMatch(center, /accountApi/);
 });
 
-test('account security and lifecycle controls remain local-only in 1.0.3', () => {
+test('account security and lifecycle controls remain local-only in 1.0.4', () => {
   const source = read('src/settings/pages/AccountSettings.jsx');
   assert.doesNotMatch(source, REAL_ACCOUNT_BINDINGS);
   assert.match(source, /A troca real de senha será conectada ao backend final\./);
