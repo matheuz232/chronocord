@@ -16,7 +16,7 @@ export function chronocordProductFeatures() {
 
       const appVersionMarker = 'const APP_VERSION = "1.0.2";';
       if (output.includes(appVersionMarker)) {
-        output = output.replace(appVersionMarker, 'const APP_VERSION = "1.0.3";');
+        output = output.replace(appVersionMarker, 'const APP_VERSION = "1.0.4";');
         changed = true;
       }
 
@@ -48,7 +48,7 @@ export function chronocordProductFeatures() {
       if (output.includes(modalMarker)) {
         output = output.replace(modalMarker, 'function Modal({ onClose, width = 380, bg, border, children, hidden = false }) {');
         const modalDisplayMarker = 'background: "#000000aa", display: "flex", alignItems:';
-        if (!output.includes(modalDisplayMarker)) throw new Error('ChronoCord 1.0.3 Modal display marker missing.');
+        if (!output.includes(modalDisplayMarker)) throw new Error('ChronoCord 1.0.4 Modal display marker missing.');
         output = output.replace(modalDisplayMarker, 'background: "#000000aa", display: hidden ? "none" : "flex", alignItems:');
         changed = true;
       }
@@ -117,7 +117,7 @@ export function chronocordProductFeatures() {
       if (!changed) return null;
       const required = ['cc-jukebox-queue-toggle', 'cc-jukebox-art-card', 'cc-remote-video-paused', 'cc-profile-full-button'];
       for (const marker of required) {
-        if (!output.includes(marker)) throw new Error(`ChronoCord 1.0.3 feature marker missing: ${marker}`);
+        if (!output.includes(marker)) throw new Error(`ChronoCord 1.0.4 feature marker missing: ${marker}`);
       }
       return { code: output, map: null };
     },
