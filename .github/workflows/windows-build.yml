@@ -79,6 +79,9 @@ jobs:
       - name: Settings — native installer
         run: node --test tests/settings-installer-native.test.mjs
 
+      - name: Social — invites and friends
+        run: node --test tests/social-invite-friends.test.mjs
+
       - name: Settings — voice stage
         run: node --test tests/settings-voice-stage.test.mjs
 
