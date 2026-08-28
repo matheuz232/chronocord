@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - release/1.0.4-prep
     tags:
       - 'v*'
 
@@ -188,19 +187,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: ChronoCord ${{ github.ref_name }}
-          body_path: RELEASE-1.0.4.md
-          files: |
-            release/ChronoCord-Installer-*.exe
-            release/ChronoCord-Installer-*.exe.sha256
-          fail_on_unmatched_files: true
-
-      - name: Publish ChronoCord v1.0.4
-        if: github.ref == 'refs/heads/release/1.0.4-prep'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v1.0.4
-          target_commitish: 7381846283629f395c07287c7fa70104a143280a
-          name: ChronoCord v1.0.4
           body_path: RELEASE-1.0.4.md
           files: |
             release/ChronoCord-Installer-*.exe
