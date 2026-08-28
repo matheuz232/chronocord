@@ -1,3 +1,3 @@
-# ChronoCord 1.0.1 build status
+# ChronoCord 1.0.4 build status
 
-Source-level corrections prepared for DM safety, WebRTC media capture, YouTube embeds, profile persistence and GitHub Releases based updates. Run `npm run check`, `npm run build`, and `npm run dist` on Windows.
+Release preparada com as correções de convite de servidor e amizade por nome de usuário, mantendo o instalador único nativo, o updater nativo, `npm audit` obrigatório e os smoke tests de payload e instalação real no Windows.
