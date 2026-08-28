@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - integration/1.0.3-final
     tags:
       - 'v*'
 
@@ -188,7 +187,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: ChronoCord ${{ github.ref_name }}
-          body_path: RELEASE-1.0.3.md
+          body_path: RELEASE-1.0.4.md
           files: |
             release/ChronoCord-Installer-*.exe
             release/ChronoCord-Installer-*.exe.sha256
