@@ -1,4 +1,11 @@
-const { ipcMain, desktopCapturer } = require('electron');
+const { ipcMain, desktopCapturer, clipboard } = require('electron');
+
+ipcMain.handle('clipboard:write-text', (_event, text = '') => {
+  const value = String(text ?? '');
+  if (!value || value.length > 4096) throw new Error('Texto inválido para copiar.');
+  clipboard.writeText(value);
+  return { ok: true };
+});
 
 ipcMain.handle('media:get-desktop-sources', async () => {
   const sources = await desktopCapturer.getSources({
