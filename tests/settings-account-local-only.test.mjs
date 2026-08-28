@@ -7,7 +7,7 @@ const accountSettingsSource = readFileSync(
   'utf8',
 );
 
-test('ChronoCord 1.0.3 keeps account security controls local-only', () => {
+test('ChronoCord 1.0.4 keeps account security controls local-only', () => {
   const forbiddenRealSecurityBindings = [
     /accountApi/,
     /changePassword\s*\(/,
